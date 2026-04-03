@@ -1,19 +1,13 @@
-import mysql.connector
-from mysql.connector import Error
+import sqlite3
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
 
 def get_db_connection():
     try:
-        connection = mysql.connector.connect(
-            host=os.getenv("DB_HOST", "localhost"),
-            user=os.getenv("DB_USER", "adm"),
-            password=os.getenv("DB_PASSWORD", "adm"),
-            database=os.getenv("DB_NAME", "zelamapa")
-        )
+        # Resolve to backend/ database file
+        db_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "zelamapa.db")
+        connection = sqlite3.connect(db_path, check_same_thread=False)
+        connection.row_factory = sqlite3.Row
         return connection
-    except Error as e:
-        print(f"Erro ao conectar ao MySQL: {e}")
+    except sqlite3.Error as e:
+        print(f"Erro ao conectar ao SQLite: {e}")
         return None

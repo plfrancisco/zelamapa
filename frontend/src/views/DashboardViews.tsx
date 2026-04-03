@@ -1,6 +1,4 @@
 import {
-  Map,
-  Truck,
   User,
   Bell,
   Shield,

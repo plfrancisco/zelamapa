@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Lock, User, AlertCircle } from 'lucide-react';
+import { Lock, User, AlertCircle, Leaf } from 'lucide-react';
 
-export default function LoginView({ onLogin }: { onLogin: (role: 'motorista' | 'gerente') => void }) {
+export default function LoginView({ onLogin }: { onLogin: (role: 'motorista' | 'gerente' | 'cidadao') => void }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -21,7 +21,9 @@ export default function LoginView({ onLogin }: { onLogin: (role: 'motorista' | '
     <div className="min-h-screen bg-azul-marinho flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-azul-marinho">ZelaMapa</h1>
+          <h1 className="text-3xl font-bold text-azul-marinho flex items-center justify-center gap-2">
+            <Leaf className="text-verde-esmeralda" size={28} /> ZelaMapa
+          </h1>
           <p className="text-gray-500 mt-2">Plataforma GovTech de Zeladoria</p>
         </div>
 
@@ -45,7 +47,7 @@ export default function LoginView({ onLogin }: { onLogin: (role: 'motorista' | '
                 onChange={(e) => setUsername(e.target.value)}
                 className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-verde-esmeralda focus:border-verde-esmeralda outline-none transition"
                 placeholder="Ex: motorista ou gerente"
-                required
+                
               />
             </div>
           </div>
@@ -62,7 +64,7 @@ export default function LoginView({ onLogin }: { onLogin: (role: 'motorista' | '
                 onChange={(e) => setPassword(e.target.value)}
                 className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-verde-esmeralda focus:border-verde-esmeralda outline-none transition"
                 placeholder="••••••"
-                required
+                
               />
             </div>
           </div>
@@ -71,9 +73,19 @@ export default function LoginView({ onLogin }: { onLogin: (role: 'motorista' | '
             type="submit"
             className="w-full bg-verde-esmeralda hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition-colors shadow-lg mt-4 cursor-pointer"
           >
-            Entrar no Sistema
+            Entrar no Sistema Restrito
           </button>
         </form>
+
+        <div className="mt-8 pt-6 border-t border-gray-200">
+          <p className="text-sm text-center text-gray-600 font-semibold mb-4">É cidadão de Pompéia?</p>
+          <button
+            onClick={() => onLogin('cidadao')}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors shadow-lg cursor-pointer"
+          >
+            Acessar Área do Cidadão
+          </button>
+        </div>
         
         <div className="mt-6 text-center text-xs text-gray-400">
             Acesso Restrito - ZelaMapa Logística Municipal

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   ArrowLeft,
   Clock,
@@ -24,69 +24,87 @@ interface Collection {
   lng: number;
 }
 
-const mockCollections: Collection[] = [
-  {
-    id: 1,
-    address: "Rua das Flores, 123 - Centro",
-    wasteType: "Entulho de Obra",
-    photoUrl: "https://images.unsplash.com/photo-1653202143301-7fb80a90010c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb25zdHJ1Y3Rpb24lMjB3YXN0ZSUyMGRlYnJpc3xlbnwxfHx8fDE3NzUwOTIyMjJ8MA&ixlib=rb-4.1.0&q=80&w=400",
-    status: "completed",
-    lat: -22.102,
-    lng: -50.176,
-  },
-  {
-    id: 2,
-    address: "Av. Brasil, 456 - Jardim Alvorada",
-    wasteType: "Móveis Velhos",
-    photoUrl: "https://images.unsplash.com/photo-1772057593098-edb9b9429059?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxvbGQlMjBmdXJuaXR1cmUlMjBkaXNwb3NhbHxlbnwxfHx8fDE3NzUwOTIyMjN8MA&ixlib=rb-4.1.0&q=80&w=400",
-    status: "pending",
-    lat: -22.106,
-    lng: -50.170,
-  },
-  {
-    id: 3,
-    address: "Rua São Paulo, 789 - Vila Nova",
-    wasteType: "Poda de Árvores",
-    photoUrl: "https://images.unsplash.com/photo-1764173038986-9d1261cd01a1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxncmVlbiUyMHdhc3RlJTIwZ2FyZGVuJTIwcHJ1bmluZ3xlbnwxfHx8fDE3NzUwOTIyMjJ8MA&ixlib=rb-4.1.0&q=80&w=400",
-    status: "pending",
-    lat: -22.110,
-    lng: -50.178,
-  },
-  {
-    id: 4,
-    address: "Rua Minas Gerais, 321 - São José",
-    wasteType: "Entulho de Obra",
-    photoUrl: "https://images.unsplash.com/photo-1653202143301-7fb80a90010c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb25zdHJ1Y3Rpb24lMjB3YXN0ZSUyMGRlYnJpc3xlbnwxfHx8fDE3NzUwOTIyMjJ8MA&ixlib=rb-4.1.0&q=80&w=400",
-    status: "pending",
-    lat: -22.115,
-    lng: -50.165,
-  },
-  {
-    id: 5,
-    address: "Av. Independência, 654 - Centro",
-    wasteType: "Móveis Velhos",
-    photoUrl: "https://images.unsplash.com/photo-1772057593098-edb9b9429059?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxvbGQlMjBmdXJuaXR1cmUlMjBkaXNwb3NhbHxlbnwxfHx8fDE3NzUwOTIyMjN8MA&ixlib=rb-4.1.0&q=80&w=400",
-    status: "pending",
-    lat: -22.100,
-    lng: -50.160,
-  },
-];
-
 export default function DriverApp({ onLogout }: { onLogout: () => void }) {
-  const [collections, setCollections] = useState(mockCollections);
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [routeGeometry, setRouteGeometry] = useState<[number, number][]>([]);
+
+  useEffect(() => {
+    fetch("http://localhost:8000/api/ocorrencias/pendentes?motorista_id=2")
+      .then(res => res.json())
+      .then(data => {
+        const formatData = data.map((item: {
+          id: number;
+          descricao?: string;
+          wasteType?: string;
+          imagem_path?: string;
+          status: string;
+          latitude: string;
+          longitude: string;
+        }) => ({
+          id: item.id,
+          address: item.descricao || `Ocorrência #${item.id}`,
+          wasteType: item.wasteType || 'Resíduo',
+          photoUrl: item.imagem_path ? `http://localhost:8000${item.imagem_path}` : "https://images.unsplash.com/photo-1653202143301-7fb80a90010c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb25zdHJ1Y3Rpb24lMjB3YXN0ZSUyMGRlYnJpc3xlbnwxfHx8fDE3NzUwOTIyMjJ8MA&ixlib=rb-4.1.0&q=80&w=400",
+          status: item.status === "CONCLUIDO" ? "completed" : "pending",
+          lat: parseFloat(item.latitude),
+          lng: parseFloat(item.longitude),
+        }));
+        setCollections(formatData);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("Erro ao puxar dados reais", err);
+        setLoading(false);
+      });
+  }, []);
+  useEffect(() => {
+    const pendingCollections = collections.filter(c => c.status === "pending");
+    if (pendingCollections.length >= 2) {
+      const coords = pendingCollections.map(c => `${c.lng},${c.lat}`).join(';');
+      fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?geometries=geojson&overview=full`)
+        .then(res => res.json())
+        .then(data => {
+           if (data.routes && data.routes[0]) {
+               const path = data.routes[0].geometry.coordinates.map((c: [number, number]) => [c[1], c[0]] as [number, number]);
+               setRouteGeometry(path);
+           }
+        }).catch(err => {
+            console.error("OSRM falhou, caindo para linha reta", err);
+            setRouteGeometry(pendingCollections.map(c => [c.lat, c.lng] as [number, number]));
+        });
+    } else if (pendingCollections.length === 1) {
+       setRouteGeometry([]);
+    } else {
+       setRouteGeometry([]);
+    }
+  }, [collections]);
+
   const currentCollection = collections.find((c) => c.status === "pending");
   const completedCount = collections.filter((c) => c.status === "completed").length;
   const totalCount = collections.length;
 
-  const handleCompleteCollection = () => {
+  const handleCompleteCollection = async () => {
     if (!currentCollection) return;
     
-    setCollections((prev) =>
-      prev.map((c) =>
-        c.id === currentCollection.id ? { ...c, status: "completed" } : c
-      )
-    );
+    try {
+      await fetch(`http://localhost:8000/api/ocorrencias/${currentCollection.id}/concluir`, {
+        method: 'PUT'
+      });
+      
+      setCollections((prev) =>
+        prev.map((c) =>
+          c.id === currentCollection.id ? { ...c, status: "completed" } : c
+        )
+      );
+    } catch (e) {
+      console.error("Erro ao concluir", e);
+    }
   };
+
+  if (loading) {
+    return <div className="h-screen bg-[#0f1419] flex items-center justify-center text-white">Carregando rotas...</div>;
+  }
 
   return (
     <div className="dark h-screen bg-[#0f1419] text-white overflow-hidden relative">
@@ -123,10 +141,12 @@ export default function DriverApp({ onLogout }: { onLogout: () => void }) {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             className="map-tiles-dark"
           />
-          <Polyline 
-            positions={collections.map(c => [c.lat, c.lng] as [number, number])} 
-            pathOptions={{ color: '#2DCE89', weight: 4, dashArray: '5, 10' }} 
-          />
+          {routeGeometry.length > 0 && (
+            <Polyline 
+              positions={routeGeometry} 
+              pathOptions={{ color: '#2DCE89', weight: 6, lineJoin: 'round', lineCap: 'round' }} 
+            />
+          )}
 
           {collections.map((collection, index) => {
             const iconHtml = collection.status === "completed" 
@@ -214,7 +234,7 @@ export default function DriverApp({ onLogout }: { onLogout: () => void }) {
                 <div className="w-full bg-gray-800 rounded-full h-2.5 shadow-inner">
                   <div
                     className="bg-gradient-to-r from-[#209a65] to-[#2DCE89] h-2.5 rounded-full transition-all duration-700 shadow-[0_0_10px_rgba(45,206,137,0.5)]"
-                    style={{ width: `${(completedCount / totalCount) * 100}%` }}
+                    style={{ width: `${totalCount > 0 ? (completedCount / totalCount) * 100 : 0}%` }}
                   ></div>
                 </div>
               </div>

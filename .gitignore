@@ -1,1 +1,2 @@
 .env\n.idea/\n.vscode/
+node_modules/\nbackend/zelamapa.db\nbackend/uploads/\nfrontend/node_modules/
