@@ -20,6 +20,9 @@ import { Switch } from "../components/ui/switch";
 import { Label } from "../components/ui/label";
 import { Input } from "../components/ui/input";
 import { useState } from "react";
+import { MapContainer, TileLayer, Circle, Marker, Popup } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import {
   BarChart,
   Bar,
@@ -51,7 +54,7 @@ const activeTrucks = [
   {
     id: "CAM-01",
     driver: "João Silva",
-    location: { lat: 35, lng: 40 },
+    location: { lat: -22.105, lng: -50.175 },
     status: "em_rota",
     collectionsCompleted: 3,
     collectionsTotal: 5,
@@ -60,7 +63,7 @@ const activeTrucks = [
   {
     id: "CAM-02",
     driver: "Maria Santos",
-    location: { lat: 60, lng: 70 },
+    location: { lat: -22.095, lng: -50.180 },
     status: "coletando",
     collectionsCompleted: 5,
     collectionsTotal: 6,
@@ -69,7 +72,7 @@ const activeTrucks = [
   {
     id: "CAM-03",
     driver: "Pedro Costa",
-    location: { lat: 50, lng: 30 },
+    location: { lat: -22.110, lng: -50.170 },
     status: "em_rota",
     collectionsCompleted: 2,
     collectionsTotal: 7,
@@ -78,7 +81,7 @@ const activeTrucks = [
   {
     id: "CAM-04",
     driver: "Ana Lima",
-    location: { lat: 75, lng: 55 },
+    location: { lat: -22.115, lng: -50.165 },
     status: "retornando",
     collectionsCompleted: 8,
     collectionsTotal: 8,
@@ -130,17 +133,16 @@ export function HeatmapView() {
             <CardTitle className="text-[#1A2B48]">Mapa de Calor - Pompeia/SP</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="relative bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg overflow-hidden" style={{ height: "500px" }}>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  <Map className="w-16 h-16 text-[#1A2B48] mx-auto mb-4 opacity-20" />
-                  <p className="text-[#1A2B48] opacity-60">Mapa interativo de Pompeia</p>
-                  <p className="text-sm text-gray-500 mt-2">Áreas de maior concentração em vermelho</p>
-                </div>
-              </div>
-              <div className="absolute top-1/4 left-1/3 w-32 h-32 bg-red-500/30 rounded-full blur-2xl"></div>
-              <div className="absolute top-1/2 right-1/4 w-24 h-24 bg-orange-500/30 rounded-full blur-2xl"></div>
-              <div className="absolute bottom-1/4 left-1/2 w-28 h-28 bg-yellow-500/20 rounded-full blur-2xl"></div>
+            <div className="relative rounded-lg overflow-hidden" style={{ height: "500px", zIndex: 0 }}>
+              <MapContainer center={[-22.1062, -50.1740]} zoom={13} style={{ height: "100%", width: "100%", zIndex: 1 }}>
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <Circle center={[-22.1000, -50.1800]} radius={800} pathOptions={{ color: 'transparent', fillColor: 'red', fillOpacity: 0.4 }} />
+                <Circle center={[-22.1100, -50.1600]} radius={600} pathOptions={{ color: 'transparent', fillColor: 'orange', fillOpacity: 0.4 }} />
+                <Circle center={[-22.1200, -50.1700]} radius={700} pathOptions={{ color: 'transparent', fillColor: 'yellow', fillOpacity: 0.3 }} />
+              </MapContainer>
             </div>
           </CardContent>
         </Card>
@@ -274,40 +276,40 @@ export function ActiveRoutesView() {
             <CardTitle className="text-[#1A2B48]">Rastreamento em Tempo Real</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="relative bg-gradient-to-br from-green-50 to-green-100 rounded-lg overflow-hidden" style={{ height: "500px" }}>
-              <div className="absolute inset-0 opacity-10" style={{
-                backgroundImage: `
-                  linear-gradient(rgba(26, 43, 72, 0.1) 1px, transparent 1px),
-                  linear-gradient(90deg, rgba(26, 43, 72, 0.1) 1px, transparent 1px)
-                `,
-                backgroundSize: '40px 40px'
-              }}></div>
-
-              {activeTrucks.map((truck) => (
-                <div
-                  key={truck.id}
-                  className="absolute transform -translate-x-1/2 -translate-y-1/2"
-                  style={{
-                    left: `${truck.location.lng}%`,
-                    top: `${truck.location.lat}%`,
-                  }}
-                >
-                  <div className="relative group">
-                    <div className="absolute inset-0 w-12 h-12 rounded-full bg-[#2DCE89] animate-ping opacity-20"></div>
-                    <div className="relative w-12 h-12 rounded-full bg-[#1A2B48] border-4 border-white flex items-center justify-center shadow-xl">
-                      <Truck className="w-6 h-6 text-white" />
-                    </div>
-                    
-                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                      <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 whitespace-nowrap">
-                        <p className="text-xs text-gray-500">{truck.id}</p>
-                        <p className="text-sm text-[#1A2B48]">{truck.driver}</p>
-                        <p className="text-xs text-gray-600 mt-1">{truck.collectionsCompleted}/{truck.collectionsTotal} coletas</p>
+            <div className="relative rounded-lg overflow-hidden" style={{ height: "500px", zIndex: 0 }}>
+              <MapContainer center={[-22.1062, -50.1740]} zoom={13} style={{ height: "100%", width: "100%", zIndex: 1 }}>
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                {activeTrucks.map((truck) => {
+                  const icon = L.divIcon({
+                    className: 'custom-leaflet-icon',
+                    html: `
+                      <div class="relative group" style="width: 48px; height: 48px; outline: none;">
+                        ${truck.status === 'coletando' ? '<div class="absolute inset-0 w-12 h-12 rounded-full bg-[#2DCE89] animate-ping opacity-20"></div>' : ''}
+                        <div class="relative w-12 h-12 rounded-full bg-[#1A2B48] border-4 border-white flex items-center justify-center shadow-xl">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17h4V5H2v12h3"/><path d="M20 17h2v-9h-4m-1 7h-2.5"/><path d="M14 17h-1"/><path d="M14 8h5"/><path d="M4 17a2 2 0 1 0 4 0 2 2 0 1 0-4 0"/><path d="M15 17a2 2 0 1 0 4 0 2 2 0 1 0-4 0"/></svg>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                    `,
+                    iconSize: [48, 48],
+                    iconAnchor: [24, 24],
+                  });
+
+                  return (
+                    <Marker key={truck.id} position={[truck.location.lat, truck.location.lng]} icon={icon}>
+                      <Popup>
+                        <div className="p-1">
+                          <p className="text-xs text-gray-500 font-medium">${truck.id}</p>
+                          <p className="text-sm font-bold text-[#1A2B48] mb-1">${truck.driver}</p>
+                          <p className="text-xs text-gray-600">${truck.collectionsCompleted}/${truck.collectionsTotal} coletas</p>
+                        </div>
+                      </Popup>
+                    </Marker>
+                  );
+                })}
+              </MapContainer>
             </div>
           </CardContent>
         </Card>

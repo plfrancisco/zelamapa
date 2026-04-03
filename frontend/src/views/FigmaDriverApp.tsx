@@ -10,6 +10,9 @@ import {
 import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
+import { MapContainer, TileLayer, Marker, Polyline, Popup } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
 interface Collection {
   id: number;
@@ -28,8 +31,8 @@ const mockCollections: Collection[] = [
     wasteType: "Entulho de Obra",
     photoUrl: "https://images.unsplash.com/photo-1653202143301-7fb80a90010c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb25zdHJ1Y3Rpb24lMjB3YXN0ZSUyMGRlYnJpc3xlbnwxfHx8fDE3NzUwOTIyMjJ8MA&ixlib=rb-4.1.0&q=80&w=400",
     status: "completed",
-    lat: 30,
-    lng: 25,
+    lat: -22.102,
+    lng: -50.176,
   },
   {
     id: 2,
@@ -37,8 +40,8 @@ const mockCollections: Collection[] = [
     wasteType: "Móveis Velhos",
     photoUrl: "https://images.unsplash.com/photo-1772057593098-edb9b9429059?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxvbGQlMjBmdXJuaXR1cmUlMjBkaXNwb3NhbHxlbnwxfHx8fDE3NzUwOTIyMjN8MA&ixlib=rb-4.1.0&q=80&w=400",
     status: "pending",
-    lat: 45,
-    lng: 40,
+    lat: -22.106,
+    lng: -50.170,
   },
   {
     id: 3,
@@ -46,8 +49,8 @@ const mockCollections: Collection[] = [
     wasteType: "Poda de Árvores",
     photoUrl: "https://images.unsplash.com/photo-1764173038986-9d1261cd01a1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxncmVlbiUyMHdhc3RlJTIwZ2FyZGVuJTIwcHJ1bmluZ3xlbnwxfHx8fDE3NzUwOTIyMjJ8MA&ixlib=rb-4.1.0&q=80&w=400",
     status: "pending",
-    lat: 60,
-    lng: 55,
+    lat: -22.110,
+    lng: -50.178,
   },
   {
     id: 4,
@@ -55,8 +58,8 @@ const mockCollections: Collection[] = [
     wasteType: "Entulho de Obra",
     photoUrl: "https://images.unsplash.com/photo-1653202143301-7fb80a90010c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb25zdHJ1Y3Rpb24lMjB3YXN0ZSUyMGRlYnJpc3xlbnwxfHx8fDE3NzUwOTIyMjJ8MA&ixlib=rb-4.1.0&q=80&w=400",
     status: "pending",
-    lat: 75,
-    lng: 70,
+    lat: -22.115,
+    lng: -50.165,
   },
   {
     id: 5,
@@ -64,8 +67,8 @@ const mockCollections: Collection[] = [
     wasteType: "Móveis Velhos",
     photoUrl: "https://images.unsplash.com/photo-1772057593098-edb9b9429059?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxvbGQlMjBmdXJuaXR1cmUlMjBkaXNwb3NhbHxlbnwxfHx8fDE3NzUwOTIyMjN8MA&ixlib=rb-4.1.0&q=80&w=400",
     status: "pending",
-    lat: 85,
-    lng: 30,
+    lat: -22.100,
+    lng: -50.160,
   },
 ];
 
@@ -113,64 +116,46 @@ export default function DriverApp({ onLogout }: { onLogout: () => void }) {
       </div>
 
       {/* Map Area */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-800 via-slate-700 to-slate-600">
-        <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-          {/* Route line connecting all points */}
-          <path
-            d={`M ${collections[0].lng} ${collections[0].lat} ${collections
-              .slice(1)
-              .map((c) => `L ${c.lng} ${c.lat}`)
-              .join(" ")}`}
-            stroke="#2DCE89"
-            strokeWidth="0.5"
-            fill="none"
-            strokeDasharray="2,1"
-            opacity="0.8"
+      <div className="absolute inset-0 z-0">
+        <MapContainer center={[-22.1062, -50.1740]} zoom={14} style={{ height: "100%", width: "100%", zIndex: 0 }} zoomControl={false}>
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            className="map-tiles-dark"
           />
-        </svg>
+          <Polyline 
+            positions={collections.map(c => [c.lat, c.lng] as [number, number])} 
+            pathOptions={{ color: '#2DCE89', weight: 4, dashArray: '5, 10' }} 
+          />
 
-        {/* Location Pins */}
-        {collections.map((collection, index) => (
-          <div
-            key={collection.id}
-            className="absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-300"
-            style={{
-              left: `${collection.lng}%`,
-              top: `${collection.lat}%`,
-            }}
-          >
-            <div className="relative group">
-              {collection.status === "completed" ? (
-                <div className="w-10 h-10 rounded-full bg-[#2DCE89] border-4 border-white/30 flex items-center justify-center shadow-lg cursor-pointer">
-                  <CheckCircle className="w-5 h-5 text-white" />
-                </div>
-              ) : (
-                <div className="relative cursor-pointer">
-                  <div className="absolute inset-0 w-10 h-10 rounded-full bg-[#2DCE89] animate-ping opacity-30"></div>
-                  <div className="relative w-10 h-10 rounded-full bg-[#2DCE89] border-4 border-white flex items-center justify-center shadow-lg">
-                    <span className="text-white font-bold">{index + 1}</span>
-                  </div>
-                </div>
-              )}
-              
-              {/* Tooltip */}
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                <div className="bg-black/90 backdrop-blur-sm text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap shadow-xl">
-                  {collection.address.split(" - ")[0]}
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
+          {collections.map((collection, index) => {
+            const iconHtml = collection.status === "completed" 
+              ? `<div class="w-10 h-10 rounded-full bg-[#2DCE89] border-4 border-white flex items-center justify-center shadow-lg"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></div>`
+              : `<div class="relative"><div class="absolute inset-0 w-10 h-10 rounded-full bg-[#2DCE89] animate-ping opacity-30"></div><div class="relative w-10 h-10 rounded-full bg-[#2DCE89] border-4 border-white flex items-center justify-center shadow-lg"><span class="text-white font-bold" style="font-family: sans-serif;">${index + 1}</span></div></div>`;
+            
+            const icon = L.divIcon({
+              className: 'custom-driver-icon',
+              html: iconHtml,
+              iconSize: [40, 40],
+              iconAnchor: [20, 20],
+            });
 
-        {/* Grid overlay for map texture */}
-        <div className="absolute inset-0 opacity-10" style={{
-          backgroundImage: `
-            linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
-          `,
-          backgroundSize: '50px 50px'
-        }}></div>
+            return (
+              <Marker key={collection.id} position={[collection.lat, collection.lng]} icon={icon}>
+                <Popup>
+                  <div className="font-semibold text-gray-800">${collection.address.split(" - ")[0]}</div>
+                </Popup>
+              </Marker>
+            );
+          })}
+        </MapContainer>
+
+        {/* Custom CSS for dark map tiles (optional, but looks better in dark mode App) */}
+        <style dangerouslySetInnerHTML={{__html: `
+          .map-tiles-dark {
+            filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+          }
+        `}} />
       </div>
 
       {/* Bottom Card */}
