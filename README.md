@@ -1,35 +1,41 @@
-# ZelaMapa - Sistema GovTech de Limpeza Urbana e Geoprocessamento
+# ZelaMapa
 
-O **ZelaMapa** é uma plataforma focada na gestão e controle operacional da coleta de resíduos e limpeza urbana. Ele atende ao município de *Pompéia-SP* através de rotas geo referenciadas. 
-
-O sistema conta com dois perfis:
-- **Gerente**: Um dashboard gerencial completo para monitoramento, mapas de calor, e acompanhamento em "bird's eye view".
-- **Motorista**: Um aplicativo visual mobile-first embarcado no navegador que auxilia caminhões de lixo/recolhimento e traça pontos. 
+ZelaMapa é um sistema GovTech projetado para gerenciar e otimizar rotas e atendimentos. Possui um Dashboard para Gestores e um Aplicativo para os Motoristas.
 
 ## Tecnologias
 
-- **Frontend**: React 18, Vite, Tailwind CSS v4, TypeScript, React Router.
-- **Backend / API**: FastAPI, Python.
-- **Banco de Dados**: MySQL Server.
-- **Mapas**: Leaflet / React-Leaflet (OpenStreetMap geo mapping).
+- **Backend:** FastAPI, Python, SQLAlchemy.
+- **Frontend:** React, TypeScript, Tailwind CSS, Vite.
+- **Mapas/Rotas:** Leaflet / React-Leaflet.
 
-## Instruções de Instalação Local
+## Estrutura do Projeto
 
-### 1. Banco de Dados (MySQL)
-Configure um banco de dados local com o arquivo `.env` da seção backend e o schema de tabelas providenciado.
+- `/backend`: Contém a API FastAPI para gerenciamento de ocorrências, rotas, usuários e outras regras de negócios.
+- `/frontend`: Aplicação Web desenvolvida em React para os usuários (Dashboard e visualização do mapa para gestores/motoristas).
+- `/database`: Scripts e modelos para o banco de dados.
+- `/.agent` / `/referencia`: Arquivos de documentação, regras de agente e design base do sistema.
 
-### 2. Rodar o Backend
-```bash
+## Scripts de Execução Local
+
+**Backend:**
+\`\`\`bash
 cd backend
+python -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload
-```
+\`\`\`
 
-### 3. Rodar o Frontend
-```bash
+**Frontend:**
+\`\`\`bash
 cd frontend
-npm install --legacy-peer-deps
+npm install
 npm run dev
-```
+\`\`\`
 
-Acesse o sistema em `http://localhost:5173`. Todos os logins podem ser testados com os IDs `gerente` ou `motorista` e a senha `adm`.
+## Funcionalidades Principais
+
+- Gestão de Ocorrências e Relatórios
+- Dashboard iterativo para Gestores (GovTech)
+- Rastreamento / Mapas interativos utilizando Leaflet
+- Controle de acesso baseado em Cargo (Gestor vs. Motorista)
