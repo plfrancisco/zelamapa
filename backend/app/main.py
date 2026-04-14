@@ -1,26 +1,40 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 import os
-from app.routers import ocorrencias, limpeza
 
-os.makedirs("uploads", exist_ok=True)
+# Import routers
+from app.routers import ocorrencias, limpeza
 
 app = FastAPI(title="ZelaMapa GovTech API")
 
+# CORS: em produção, restrinja os origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "https://*.vercel.app",
+    ],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+# Mount uploads static files
+upload_dir = os.path.join(os.getcwd(), "backend", "uploads")
+os.makedirs(upload_dir, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=upload_dir), name="uploads")
 
-app.include_router(ocorrencias.router, prefix="/api/ocorrencias", tags=["Ocorrências"])
-app.include_router(limpeza.router, prefix="/api/limpeza", tags=["Limpeza Interna"])
+# Include routers
+app.include_router(ocorrencias.router, tags=["Ocorrências"])
+app.include_router(limpeza.router, tags=["Limpeza Interna"])
 
 @app.get("/")
 def read_root():
-    return {"message": "ZelaMapa GovTech API Operacional (via FastAPI)"}
+    return {
+        "message": "ZelaMapa GovTech API Operacional",
+        "version": "1.0.0",
+        "docs": "/docs"
+    }
