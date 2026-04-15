@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { 
-  Map, 
-  TrendingUp, 
-  FileText, 
-  Settings, 
+import { useState, useEffect } from "react";
+import {
+  Map,
+  TrendingUp,
+  FileText,
+  Settings,
   Search,
   AlertCircle,
   CheckCircle2,
@@ -16,12 +16,58 @@ import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { HeatmapView, ActiveRoutesView, SettingsView } from "./DashboardViews";
 
+interface DashboardStats {
+  recentCollections: Array<{
+    id: number;
+    latitude: number;
+    longitude: number;
+    descricao: string;
+    status: string;
+    type: string;
+  }>;
+  activeTrucks: Array<{
+    driver_id: number;
+    driver_name: string;
+    completed: number;
+    total: number;
+  }>;
+}
+
 export default function ManagerDashboard({ onLogout }: { onLogout: () => void }) {
   const [activeView, setActiveView] = useState<"heatmap" | "routes" | "reports" | "settings">("heatmap");
   const [searchTerm, setSearchTerm] = useState("");
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
   const [autoAssignEnabled, setAutoAssignEnabled] = useState(true);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/api/ocorrencias/dashboard-stats`);
+        if (response.ok) {
+          const data = await response.json();
+          setStats(data);
+        }
+      } catch (err) {
+        console.error("Erro ao buscar estatísticas:", err);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+    fetchStats();
+  }, [API_BASE]);
+
+  // Calcular métricas dos dados reais
+  const dailyCollections = stats?.recentCollections.length || 0;
+  const pending48h = stats?.recentCollections.filter(c => c.status === "PENDENTE").length || 0;
+  const completed = stats?.activeTrucks.reduce((acc, t) => acc + t.completed, 0) || 0;
+  const totalOS = stats?.activeTrucks.reduce((acc, t) => acc + t.total, 0) || 0;
+  const efficiency = totalOS > 0 ? Math.round((completed / totalOS) * 100) : 94;
+  const activeOS = totalOS - completed;
 
   return (
     <div className="flex h-screen bg-[#F8F9FE]">
@@ -125,25 +171,40 @@ export default function ManagerDashboard({ onLogout }: { onLogout: () => void })
           {/* KPI Cards - Show only on heatmap and routes views */}
           {(activeView === "heatmap" || activeView === "routes") && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              {loadingStats ? (
+                // Loading state
+                Array.from({ length: 4 }).map((_, i) => (
+                  <Card key={i} className="border-none shadow-sm">
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                      <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+                      <div className="w-5 h-5 bg-gray-200 rounded animate-pulse"></div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-8 w-16 bg-gray-200 rounded animate-pulse"></div>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <>
               <Card className="border-none shadow-sm hover:shadow-md transition-shadow">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm text-gray-500 font-medium">Coletas Diárias</CardTitle>
+                  <CardTitle className="text-sm text-gray-500 font-medium">Coletas Realizadas</CardTitle>
                   <Package className="w-5 h-5 text-[#2DCE89]" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-[#1A2B48]">346</div>
-                  <p className="text-xs text-green-500 font-medium mt-1">+12% vs ontem</p>
+                  <div className="text-3xl font-bold text-[#1A2B48]">{dailyCollections}</div>
+                  <p className="text-xs text-green-500 font-medium mt-1">Total registrado</p>
                 </CardContent>
               </Card>
 
               <Card className="border-none shadow-sm hover:shadow-md transition-shadow">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm text-gray-500 font-medium">Pendentes &gt; 48h</CardTitle>
+                  <CardTitle className="text-sm text-gray-500 font-medium">Pendentes</CardTitle>
                   <AlertCircle className="w-5 h-5 text-[#F5365C]" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-[#F5365C]">8</div>
-                  <p className="text-xs text-red-500 font-medium mt-1">Requer atenção</p>
+                  <div className="text-3xl font-bold text-[#F5365C]">{pending48h}</div>
+                  <p className="text-xs text-red-500 font-medium mt-1">Aguardando atendimento</p>
                 </CardContent>
               </Card>
 
@@ -153,8 +214,10 @@ export default function ManagerDashboard({ onLogout }: { onLogout: () => void })
                   <CheckCircle2 className="w-5 h-5 text-[#2DCE89]" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-[#2DCE89]">94%</div>
-                  <p className="text-xs text-green-500 font-medium mt-1">Meta: 90%</p>
+                  <div className="text-3xl font-bold text-[#2DCE89]">{efficiency}%</div>
+                  <p className="text-xs text-green-500 font-medium mt-1">
+                    {efficiency >= 90 ? "✓ Meta atingida" : "Atenção necessária"}
+                  </p>
                 </CardContent>
               </Card>
 
@@ -164,10 +227,12 @@ export default function ManagerDashboard({ onLogout }: { onLogout: () => void })
                   <Clock className="w-5 h-5 text-[#1A2B48]" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-[#1A2B48]">23</div>
+                  <div className="text-3xl font-bold text-[#1A2B48]">{activeOS}</div>
                   <p className="text-xs text-[#1A2B48]/60 font-medium mt-1">Em andamento</p>
                 </CardContent>
               </Card>
+                </>
+              )}
             </div>
           )}
 

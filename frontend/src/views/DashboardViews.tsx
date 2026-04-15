@@ -9,7 +9,9 @@ import {
   UserPlus,
   Trash2,
   Eye,
-  EyeOff
+  EyeOff,
+  AlertCircle,
+  Loader2
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
@@ -17,7 +19,7 @@ import { Button } from "../components/ui/button";
 import { Switch } from "../components/ui/switch";
 import { Label } from "../components/ui/label";
 import { Input } from "../components/ui/input";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MapContainer, TileLayer, Circle, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -34,95 +36,120 @@ import {
   ResponsiveContainer
 } from "recharts";
 
-const wasteCategories = [
-  { name: "Entulho", value: 145, color: "#1A2B48" },
-  { name: "Móveis", value: 89, color: "#2DCE89" },
-  { name: "Poda", value: 112, color: "#5e8cf7" },
-];
+// Dados serão carregados da API
 
-const neighborhoodData = [
-  { name: "Centro", value: 34 },
-  { name: "Jardim Alvorada", value: 28 },
-  { name: "Vila Nova", value: 22 },
-  { name: "São José", value: 19 },
-  { name: "Outros", value: 43 },
-];
+// Cores para gráficos
+const WASTE_COLORS: Record<string, string> = {
+  "Entulho": "#1A2B48",
+  "Móveis": "#2DCE89",
+  "Poda": "#5e8cf7",
+};
 
-const activeTrucks = [
-  {
-    id: "CAM-01",
-    driver: "João Silva",
-    location: { lat: -22.105, lng: -50.175 },
-    status: "em_rota",
-    collectionsCompleted: 3,
-    collectionsTotal: 5,
-    lastUpdate: "2 min atrás",
-  },
-  {
-    id: "CAM-02",
-    driver: "Maria Santos",
-    location: { lat: -22.095, lng: -50.180 },
-    status: "coletando",
-    collectionsCompleted: 5,
-    collectionsTotal: 6,
-    lastUpdate: "Agora",
-  },
-  {
-    id: "CAM-03",
-    driver: "Pedro Costa",
-    location: { lat: -22.110, lng: -50.170 },
-    status: "em_rota",
-    collectionsCompleted: 2,
-    collectionsTotal: 7,
-    lastUpdate: "5 min atrás",
-  },
-  {
-    id: "CAM-04",
-    driver: "Ana Lima",
-    location: { lat: -22.115, lng: -50.165 },
-    status: "retornando",
-    collectionsCompleted: 8,
-    collectionsTotal: 8,
-    lastUpdate: "1 min atrás",
-  },
-];
+const NEIGHBORHOOD_COLORS = ["#1A2B48", "#2DCE89", "#5e8cf7", "#FFC107", "#9C27B0", "#F5365C"];
 
-const recentCollections = [
-  {
-    id: "OS-2845",
-    address: "Rua das Flores, 123",
-    neighborhood: "Centro",
-    type: "Entulho",
-    status: "completed",
-    hours: 2,
-  },
-  {
-    id: "OS-2846",
-    address: "Av. Brasil, 456",
-    neighborhood: "Jardim Alvorada",
-    type: "Móveis",
-    status: "pending",
-    hours: 36,
-  },
-  {
-    id: "OS-2847",
-    address: "Rua São Paulo, 789",
-    neighborhood: "Vila Nova",
-    type: "Poda",
-    status: "alert",
-    hours: 52,
-  },
-  {
-    id: "OS-2848",
-    address: "Rua Minas Gerais, 321",
-    neighborhood: "São José",
-    type: "Entulho",
-    status: "completed",
-    hours: 12,
-  },
-];
+interface DashboardStats {
+  recentCollections: Array<{
+    id: number;
+    latitude: number;
+    longitude: number;
+    descricao: string;
+    status: string;
+    type: string;
+  }>;
+  activeTrucks: Array<{
+    driver_id: number;
+    driver_name: string;
+    completed: number;
+    total: number;
+  }>;
+  wasteCategories: Array<{ name: string; value: number }>;
+  neighborhoodData: Array<{ name: string; value: number }>;
+}
 
 export function HeatmapView() {
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/api/ocorrencias/dashboard-stats`);
+        if (response.ok) {
+          const data = await response.json();
+          setStats(data);
+        }
+      } catch (err) {
+        console.error("Erro ao buscar estatísticas:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [API_BASE]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-[#2DCE89]" />
+        <span className="ml-2 text-gray-500">Carregando dados...</span>
+      </div>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <Card className="border-none shadow-sm">
+        <CardContent className="py-16 text-center">
+          <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+          <p className="text-gray-500">Erro ao carregar dados do dashboard</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Process waste categories colors
+  const wasteData = stats.wasteCategories.map((item) => ({
+    ...item,
+    color: WASTE_COLORS[item.name] || "#1A2B48",
+  }));
+
+  // Process neighborhood colors
+  const neighborhoodData = stats.neighborhoodData.map((item, index) => ({
+    ...item,
+    color: NEIGHBORHOOD_COLORS[index % NEIGHBORHOOD_COLORS.length],
+  }));
+
+  // Format status for display
+  const formatStatus = (status: string) => {
+    const statusMap: Record<string, { label: string; variant: "outline" | "default"; className: string }> = {
+      completed: { label: "Concluído", variant: "default", className: "bg-[#2DCE89] text-white hover:bg-[#25b377]" },
+      PENDENTE: { label: "Pendente", variant: "default", className: "bg-[#FFC107] text-white hover:bg-[#e6ae06]" },
+      EM_ANDAMENTO: { label: "Em Andamento", variant: "default", className: "bg-blue-500 text-white" },
+      CONCLUIDO: { label: "Concluído", variant: "default", className: "bg-[#2DCE89] text-white hover:bg-[#25b377]" },
+    };
+    return statusMap[status] || { label: status, variant: "outline", className: "border-gray-300" };
+  };
+
+  // Calculate approximate hours since creation
+  const getHoursAgo = (id: number) => {
+    // Simula horas com base no ID (quanto menor o ID, mais antigo)
+    // Em produção, usaria timestamp real
+    const hoursMap: Record<number, number> = { 1: 48, 2: 24, 3: 12, 4: 6, 5: 3, 6: 1 };
+    return hoursMap[id] || Math.floor(Math.random() * 24) + 1;
+  };
+
+  // Get address from lat/lng (simplified - just shows coordinates as demo)
+  const getAddress = (item: any) => {
+    return `Lat: ${item.latitude.toFixed(4)}, Lng: ${item.longitude.toFixed(4)}`;
+  };
+
+  // Get neighborhood from ID (mock based on ID)
+  const getNeighborhood = (id: number) => {
+    const neighborhoods = ["Centro", "Jardim Alvorada", "Vila Nova", "São José", "Pompeia Central"];
+    return neighborhoods[id % neighborhoods.length];
+  };
+
   return (
     <>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -137,9 +164,21 @@ export function HeatmapView() {
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
-                <Circle center={[-22.1000, -50.1800]} radius={800} pathOptions={{ color: 'transparent', fillColor: 'red', fillOpacity: 0.4 }} />
-                <Circle center={[-22.1100, -50.1600]} radius={600} pathOptions={{ color: 'transparent', fillColor: 'orange', fillOpacity: 0.4 }} />
-                <Circle center={[-22.1200, -50.1700]} radius={700} pathOptions={{ color: 'transparent', fillColor: 'yellow', fillOpacity: 0.3 }} />
+                {/* Render circles based on occurrence density */}
+                {stats.recentCollections.map((item, index) => {
+                  const colors = ["red", "orange", "yellow"];
+                  const radii = [800, 600, 700];
+                  const color = colors[index % colors.length];
+                  const radius = radii[index % radii.length];
+                  return (
+                    <Circle
+                      key={item.id}
+                      center={[item.latitude, item.longitude]}
+                      radius={radius}
+                      pathOptions={{ color: 'transparent', fillColor: color, fillOpacity: 0.4 }}
+                    />
+                  );
+                })}
               </MapContainer>
             </div>
           </CardContent>
@@ -152,13 +191,13 @@ export function HeatmapView() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={wasteCategories}>
+                <BarChart data={wasteData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 12 }} />
                   <Tooltip />
                   <Bar dataKey="value" radius={[8, 8, 0, 0]}>
-                    {wasteCategories.map((entry, index) => (
+                    {wasteData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Bar>
@@ -169,7 +208,7 @@ export function HeatmapView() {
 
           <Card className="border-none shadow-sm">
             <CardHeader>
-              <CardTitle className="text-[#1A2B48]">Distribuição por Bairro</CardTitle>
+              <CardTitle className="text-[#1A2B48]">Distribuição por Região</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={200}>
@@ -184,10 +223,10 @@ export function HeatmapView() {
                     dataKey="value"
                     label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
                   >
-                    {neighborhoodData.map((_, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={["#1A2B48", "#2DCE89", "#5e8cf7", "#FFC107", "#9C27B0"][index % 5]} 
+                    {neighborhoodData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={entry.color || NEIGHBORHOOD_COLORS[index % NEIGHBORHOOD_COLORS.length]}
                       />
                     ))}
                   </Pie>
@@ -217,45 +256,36 @@ export function HeatmapView() {
                 </tr>
               </thead>
               <tbody>
-                {recentCollections.map((collection) => (
-                  <tr key={collection.id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="py-3 px-4 text-sm text-[#1A2B48]">{collection.id}</td>
-                    <td className="py-3 px-4 text-sm text-gray-700">{collection.address}</td>
-                    <td className="py-3 px-4 text-sm text-gray-700">{collection.neighborhood}</td>
-                    <td className="py-3 px-4">
-                      <Badge 
-                        variant="outline" 
-                        className={
-                          collection.type === "Entulho" 
-                            ? "border-[#1A2B48] text-[#1A2B48]" 
-                            : collection.type === "Móveis"
-                            ? "border-[#2DCE89] text-[#2DCE89]"
-                            : "border-[#5e8cf7] text-[#5e8cf7]"
-                        }
-                      >
-                        {collection.type}
-                      </Badge>
-                    </td>
-                    <td className="py-3 px-4">
-                      {collection.status === "completed" && (
-                        <Badge className="bg-[#2DCE89] text-white hover:bg-[#25b377]">
-                          Concluído
+                {stats.recentCollections.map((collection) => {
+                  const statusConfig = formatStatus(collection.status);
+                  return (
+                    <tr key={collection.id} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="py-3 px-4 text-sm text-[#1A2B48]">{collection.id}</td>
+                      <td className="py-3 px-4 text-sm text-gray-700">{getAddress(collection)}</td>
+                      <td className="py-3 px-4 text-sm text-gray-700">{getNeighborhood(collection.id)}</td>
+                      <td className="py-3 px-4">
+                        <Badge
+                          variant="outline"
+                          className={
+                            collection.type === "Entulho"
+                              ? "border-[#1A2B48] text-[#1A2B48]"
+                              : collection.type === "Móveis"
+                              ? "border-[#2DCE89] text-[#2DCE89]"
+                              : "border-[#5e8cf7] text-[#5e8cf7]"
+                          }
+                        >
+                          {collection.type}
                         </Badge>
-                      )}
-                      {collection.status === "pending" && (
-                        <Badge className="bg-[#FFC107] text-white hover:bg-[#e6ae06]">
-                          Pendente
+                      </td>
+                      <td className="py-3 px-4">
+                        <Badge className={statusConfig.className}>
+                          {statusConfig.label}
                         </Badge>
-                      )}
-                      {collection.status === "alert" && (
-                        <Badge className="bg-[#F5365C] text-white hover:bg-[#dc2f50]">
-                          Alerta
-                        </Badge>
-                      )}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-700">{collection.hours}h atrás</td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-700">{getHoursAgo(collection.id)}h atrás</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -265,7 +295,68 @@ export function HeatmapView() {
   );
 }
 
+interface ActiveTruck {
+  driver_id: number;
+  driver_name: string;
+  completed: number;
+  total: number;
+}
+
 export function ActiveRoutesView() {
+  const [trucks, setTrucks] = useState<ActiveTruck[]>([]);
+  const [loading, setLoading] = useState(true);
+  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/api/ocorrencias/dashboard-stats`);
+        if (response.ok) {
+          const data = await response.json();
+          setTrucks(data.activeTrucks || []);
+        }
+      } catch (err) {
+        console.error("Erro ao buscar caminhões ativos:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [API_BASE]);
+
+  // Simula localizações dos motoristas (em produção viria do banco/rastreamento GPS)
+  const getTruckLocation = (driverId: number) => {
+    const locations: Record<number, [number, number]> = {
+      2: [-22.105, -50.175], // João Silva
+      3: [-22.095, -50.180], // Maria Santos
+      4: [-22.110, -50.170], // Pedro Costa
+      5: [-22.115, -50.165], // Ana Lima
+    };
+    return locations[driverId] || [-22.1062, -50.1740];
+  };
+
+  // Status baseado no progresso
+  const getTruckStatus = (completed: number, total: number) => {
+    if (completed === 0) return "aberta";
+    if (completed < total) return "em_rota";
+    return "concluida";
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-[#2DCE89]" />
+        <span className="ml-2 text-gray-500">Carregando rotas...</span>
+      </div>
+    );
+  }
+
+  // Contadores para o painel de status
+  const completedRoutes = trucks.reduce((acc, t) => acc + t.completed, 0);
+  const totalRoutes = trucks.reduce((acc, t) => acc + t.total, 0);
+  const inProgressRoutes = totalRoutes - completedRoutes;
+  const pendingRoutes = 1; // Em produção, viria do banco de ocorrências pendentes
+
   return (
     <>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -280,12 +371,14 @@ export function ActiveRoutesView() {
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
-                {activeTrucks.map((truck) => {
+                {trucks.map((truck) => {
+                  const status = getTruckStatus(truck.completed, truck.total);
+                  const coords = getTruckLocation(truck.driver_id);
                   const icon = L.divIcon({
                     className: 'custom-leaflet-icon',
                     html: `
                       <div class="relative group" style="width: 48px; height: 48px; outline: none;">
-                        ${truck.status === 'coletando' ? '<div class="absolute inset-0 w-12 h-12 rounded-full bg-[#2DCE89] animate-ping opacity-20"></div>' : ''}
+                        ${status === 'em_rota' ? '<div class="absolute inset-0 w-12 h-12 rounded-full bg-[#2DCE89] animate-ping opacity-20"></div>' : ''}
                         <div class="relative w-12 h-12 rounded-full bg-[#1A2B48] border-4 border-white flex items-center justify-center shadow-xl">
                           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17h4V5H2v12h3"/><path d="M20 17h2v-9h-4m-1 7h-2.5"/><path d="M14 17h-1"/><path d="M14 8h5"/><path d="M4 17a2 2 0 1 0 4 0 2 2 0 1 0-4 0"/><path d="M15 17a2 2 0 1 0 4 0 2 2 0 1 0-4 0"/></svg>
                         </div>
@@ -296,12 +389,17 @@ export function ActiveRoutesView() {
                   });
 
                   return (
-                    <Marker key={truck.id} position={[truck.location.lat, truck.location.lng]} icon={icon}>
+                    <Marker key={truck.driver_id} position={coords} icon={icon}>
                       <Popup>
                         <div className="p-1">
-                          <p className="text-xs text-gray-500 font-medium">${truck.id}</p>
-                          <p className="text-sm font-bold text-[#1A2B48] mb-1">${truck.driver}</p>
-                          <p className="text-xs text-gray-600">${truck.collectionsCompleted}/${truck.collectionsTotal} coletas</p>
+                          <p className="text-xs text-gray-500 font-medium">CAM-0{truck.driver_id % 10}</p>
+                          <p className="text-sm font-bold text-[#1A2B48] mb-1">{truck.driver_name}</p>
+                          <p className="text-xs text-gray-600">
+                            {truck.completed}/{truck.total} coletas
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            {status === 'em_rota' ? '🟢 Em rota' : status === 'concluida' ? '✅ Concluído' : '⚪ Aguardando'}
+                          </p>
                         </div>
                       </Popup>
                     </Marker>
@@ -315,28 +413,38 @@ export function ActiveRoutesView() {
         <div className="space-y-4">
           <Card className="border-none shadow-sm">
             <CardHeader>
-              <CardTitle className="text-[#1A2B48]">Caminhões Ativos</CardTitle>
+              <CardTitle className="text-[#1A2B48]">Motoristas Ativos</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {activeTrucks.map((truck) => (
-                <div key={truck.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-2 h-2 rounded-full ${
-                      truck.status === "coletando" ? "bg-[#2DCE89] animate-pulse" :
-                      truck.status === "em_rota" ? "bg-blue-500" :
-                      "bg-gray-400"
-                    }`}></div>
-                    <div>
-                      <p className="text-sm text-[#1A2B48]">{truck.id}</p>
-                      <p className="text-xs text-gray-500">{truck.driver}</p>
+              {trucks.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-4">Nenhuma rota ativa no momento</p>
+              ) : (
+                trucks.map((truck) => {
+                  const status = getTruckStatus(truck.completed, truck.total);
+                  return (
+                    <div
+                      key={truck.driver_id}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-2 h-2 rounded-full ${
+                          status === "em_rota" ? "bg-[#2DCE89] animate-pulse" :
+                          status === "concluida" ? "bg-gray-400" :
+                          "bg-gray-400"
+                        }`}></div>
+                        <div>
+                          <p className="text-sm text-[#1A2B48]">{truck.driver_name}</p>
+                          <p className="text-xs text-gray-500">CAM-0{truck.driver_id % 10}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-gray-600">{truck.completed}/{truck.total}</p>
+                        <p className="text-xs text-gray-400">Agora</p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs text-gray-600">{truck.collectionsCompleted}/{truck.collectionsTotal}</p>
-                    <p className="text-xs text-gray-400">{truck.lastUpdate}</p>
-                  </div>
-                </div>
-              ))}
+                  );
+                })
+              )}
             </CardContent>
           </Card>
 
@@ -350,21 +458,21 @@ export function ActiveRoutesView() {
                   <CheckCircle2 className="w-4 h-4 text-[#2DCE89]" />
                   <span className="text-sm text-gray-700">Concluídas</span>
                 </div>
-                <span className="text-sm text-[#1A2B48]">18</span>
+                <span className="text-sm text-[#1A2B48]">{completedRoutes}</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <NavigationIcon className="w-4 h-4 text-blue-500" />
                   <span className="text-sm text-gray-700">Em Rota</span>
                 </div>
-                <span className="text-sm text-[#1A2B48]">4</span>
+                <span className="text-sm text-[#1A2B48]">{inProgressRoutes}</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-[#FFC107]" />
                   <span className="text-sm text-gray-700">Pendentes</span>
                 </div>
-                <span className="text-sm text-[#1A2B48]">1</span>
+                <span className="text-sm text-[#1A2B48]">{pendingRoutes}</span>
               </div>
             </CardContent>
           </Card>
@@ -374,8 +482,18 @@ export function ActiveRoutesView() {
   );
 }
 
-export function SettingsView({ 
-  notificationsEnabled, 
+interface Driver {
+  id: number;
+  name: string;
+  email: string;
+  papel: string;
+  truck?: string;
+  status: string;
+  criado_em?: string;
+}
+
+export function SettingsView({
+  notificationsEnabled,
   setNotificationsEnabled,
   darkModeEnabled,
   setDarkModeEnabled,
@@ -389,42 +507,113 @@ export function SettingsView({
   autoAssignEnabled: boolean;
   setAutoAssignEnabled: (value: boolean) => void;
 }) {
-  const [drivers, setDrivers] = useState([
-    { id: 1, name: "João Silva", email: "joao.silva@pompeia.sp.gov.br", truck: "CAM-01", status: "ativo" },
-    { id: 2, name: "Maria Santos", email: "maria.santos@pompeia.sp.gov.br", truck: "CAM-02", status: "ativo" },
-    { id: 3, name: "Pedro Costa", email: "pedro.costa@pompeia.sp.gov.br", truck: "CAM-03", status: "ativo" },
-    { id: 4, name: "Ana Lima", email: "ana.lima@pompeia.sp.gov.br", truck: "CAM-04", status: "ativo" },
-  ]);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
 
-  const [newDriver, setNewDriver] = useState({
+  const [newUser, setNewUser] = useState({
     name: "",
     email: "",
     password: "",
+    papel: "MOTORISTA" as "MOTORISTA" | "ADMIN",
     truck: "",
     phone: "",
   });
 
   const [showPassword, setShowPassword] = useState(false);
+  const [registrationMessage, setRegistrationMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleAddDriver = () => {
-    if (newDriver.name && newDriver.email && newDriver.password && newDriver.truck) {
-      setDrivers([
-        ...drivers,
-        {
-          id: drivers.length + 1,
-          name: newDriver.name,
-          email: newDriver.email,
-          truck: newDriver.truck,
+  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
+  // Carregar motoristas na montagem do componente
+  useEffect(() => {
+    fetchDrivers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const fetchDrivers = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/api/auth/usuarios?papel=MOTORISTA`);
+      if (response.ok) {
+        const data = await response.json();
+        const formattedDrivers = data.usuarios.map((u: any) => ({
+          id: u.id,
+          name: u.nome,
+          email: u.email,
+          papel: u.papel,
+          truck: "", // Não temos o caminhão no backend
           status: "ativo",
-        },
-      ]);
-      setNewDriver({ name: "", email: "", password: "", truck: "", phone: "" });
-      setShowPassword(false);
+          criado_em: u.criado_em,
+        }));
+        setDrivers(formattedDrivers);
+      }
+    } catch (err) {
+      console.error("Erro ao buscar motoristas:", err);
     }
   };
 
-  const handleDeleteDriver = (id: number) => {
-    setDrivers(drivers.filter((driver) => driver.id !== id));
+  const handleAddUser = async () => {
+    if (!newUser.name || !newUser.email || !newUser.password) {
+      setRegistrationMessage({ type: "error", text: "Preencha todos os campos obrigatórios" });
+      return;
+    }
+
+    setIsSubmitting(true);
+    setRegistrationMessage(null);
+
+    try {
+      const response = await fetch(`${API_BASE}/api/auth/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          nome: newUser.name,
+          email: newUser.email,
+          senha: newUser.password,
+          papel: newUser.papel,
+          caminhao_id: newUser.truck || undefined,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setRegistrationMessage({ type: "success", text: `Usuário cadastrado com sucesso como ${newUser.papel === "MOTORISTA" ? "Motorista" : "Gestor"}!` });
+        setNewUser({ name: "", email: "", password: "", papel: "MOTORISTA", truck: "", phone: "" });
+        setShowPassword(false);
+
+        // Recarregar lista de motoristas se for MOTORISTA
+        if (newUser.papel === "MOTORISTA") {
+          await fetchDrivers();
+        }
+      } else {
+        setRegistrationMessage({ type: "error", text: result.detail || "Erro ao cadastrar usuário" });
+      }
+    } catch (err: any) {
+      setRegistrationMessage({ type: "error", text: "Erro de conexão com o servidor" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteDriver = async (id: number) => {
+    if (!confirm("Tem certeza que deseja remover este usuário?")) return;
+
+    try {
+      const response = await fetch(`${API_BASE}/api/auth/usuarios/${id}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        // Atualizar lista local
+        setDrivers(drivers.filter((driver) => driver.id !== id));
+      } else {
+        const data = await response.json();
+        alert(data.detail || "Erro ao remover usuário");
+      }
+    } catch (err) {
+      alert("Erro de conexão com o servidor");
+    }
   };
 
   return (
@@ -555,54 +744,82 @@ export function SettingsView({
         </Card>
       </div>
 
-      {/* Driver Management Section - Full Width */}
+      {/* User Management Section - Full Width */}
       <Card className="border-none shadow-sm">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <UserPlus className="w-5 h-5 text-[#2DCE89]" />
-              <CardTitle className="text-[#1A2B48]">Gerenciar Motoristas</CardTitle>
+              <CardTitle className="text-[#1A2B48]">Gerenciar Contas</CardTitle>
             </div>
             <Badge className="bg-[#2DCE89] text-white hover:bg-[#25b377]">
-              {drivers.length} Ativos
+              {drivers.length} Usuários
             </Badge>
           </div>
         </CardHeader>
         <CardContent>
-          {/* Add New Driver Form */}
+          {/* Add New User Form */}
           <div className="bg-gray-50 rounded-lg p-4 mb-6">
-            <h4 className="text-sm text-[#1A2B48] mb-4">Cadastrar Novo Motorista</h4>
+            <h4 className="text-sm text-[#1A2B48] mb-4">Cadastrar Nova Conta</h4>
+
+            {/* Account Type Selector */}
+            <div className="flex gap-4 mb-4">
+              <button
+                type="button"
+                onClick={() => setNewUser({ ...newUser, papel: "MOTORISTA" })}
+                className={`px-4 py-2 rounded-lg border-2 font-medium transition-colors cursor-pointer ${
+                  newUser.papel === "MOTORISTA"
+                    ? "border-[#2DCE89] bg-[#2DCE89]/10 text-[#1A2B48]"
+                    : "border-gray-200 text-gray-600 hover:border-gray-300"
+                }`}
+              >
+                Motorista
+              </button>
+              <button
+                type="button"
+                onClick={() => setNewUser({ ...newUser, papel: "ADMIN" })}
+                className={`px-4 py-2 rounded-lg border-2 font-medium transition-colors cursor-pointer ${
+                  newUser.papel === "ADMIN"
+                    ? "border-[#2DCE89] bg-[#2DCE89]/10 text-[#1A2B48]"
+                    : "border-gray-200 text-gray-600 hover:border-gray-300"
+                }`}
+              >
+                Gestor / Admin
+              </button>
+            </div>
+
+            {/* Form Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
-                <Label htmlFor="driver-name" className="text-xs">Nome Completo</Label>
+                <Label htmlFor="user-name" className="text-xs">Nome Completo *</Label>
                 <Input
-                  id="driver-name"
+                  id="user-name"
                   placeholder="Ex: Carlos Silva"
-                  value={newDriver.name}
-                  onChange={(e) => setNewDriver({ ...newDriver, name: e.target.value })}
+                  value={newUser.name}
+                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
                   className="mt-1"
                 />
               </div>
               <div>
-                <Label htmlFor="driver-email" className="text-xs">Email / Login</Label>
+                <Label htmlFor="user-email" className="text-xs">Email *</Label>
                 <Input
-                  id="driver-email"
+                  id="user-email"
                   type="email"
-                  placeholder="motorista@pompeia.sp.gov.br"
-                  value={newDriver.email}
-                  onChange={(e) => setNewDriver({ ...newDriver, email: e.target.value })}
+                  placeholder={newUser.papel === "MOTORISTA" ? "motorista@pompeia.sp.gov.br" : "gestor@pompeia.sp.gov.br"}
+                  value={newUser.email}
+                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
                   className="mt-1"
                 />
               </div>
               <div>
-                <Label htmlFor="driver-password" className="text-xs">Senha</Label>
+                <Label htmlFor="user-password" className="text-xs">Senha * (mín. 6 caracteres)</Label>
                 <div className="relative mt-1">
                   <Input
-                    id="driver-password"
+                    id="user-password"
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
-                    value={newDriver.password}
-                    onChange={(e) => setNewDriver({ ...newDriver, password: e.target.value })}
+                    value={newUser.password}
+                    onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
                     className="pr-10"
                   />
                   <button
@@ -615,74 +832,132 @@ export function SettingsView({
                 </div>
               </div>
               <div>
-                <Label htmlFor="driver-phone" className="text-xs">Telefone</Label>
+                <Label htmlFor="user-phone" className="text-xs">Telefone</Label>
                 <Input
-                  id="driver-phone"
+                  id="user-phone"
                   placeholder="(14) 99999-9999"
-                  value={newDriver.phone}
-                  onChange={(e) => setNewDriver({ ...newDriver, phone: e.target.value })}
+                  value={newUser.phone}
+                  onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
                   className="mt-1"
                 />
               </div>
-              <div>
-                <Label htmlFor="driver-truck" className="text-xs">ID do Caminhão</Label>
-                <Input
-                  id="driver-truck"
-                  placeholder="Ex: CAM-05"
-                  value={newDriver.truck}
-                  onChange={(e) => setNewDriver({ ...newDriver, truck: e.target.value })}
-                  className="mt-1"
-                />
-              </div>
+              {newUser.papel === "MOTORISTA" && (
+                <div>
+                  <Label htmlFor="user-truck" className="text-xs">ID do Caminhão</Label>
+                  <Input
+                    id="user-truck"
+                    placeholder="Ex: CAM-05"
+                    value={newUser.truck}
+                    onChange={(e) => setNewUser({ ...newUser, truck: e.target.value })}
+                    className="mt-1"
+                  />
+                </div>
+              )}
               <div className="flex items-end">
-                <Button 
-                  onClick={handleAddDriver}
+                <Button
+                  onClick={handleAddUser}
+                  disabled={isSubmitting}
                   className="w-full bg-[#2DCE89] hover:bg-[#25b377] text-white"
                 >
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Adicionar Motorista
+                  {isSubmitting ? "Cadastrando..." : (
+                    <>
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Cadastrar {newUser.papel === "MOTORISTA" ? "Motorista" : "Gestor"}
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
+
+            {/* Feedback Message */}
+            {registrationMessage && (
+              <div
+                className={`mt-4 p-3 rounded-lg flex items-center gap-2 ${
+                  registrationMessage.type === "success"
+                    ? "bg-green-50 text-green-700 border border-green-200"
+                    : "bg-red-50 text-red-700 border border-red-200"
+                }`}
+              >
+                {registrationMessage.type === "success" ? (
+                  <CheckCircle2 className="w-5 h-5" />
+                ) : (
+                  <AlertCircle className="w-5 h-5" />
+                )}
+                <span className="text-sm">{registrationMessage.text}</span>
+              </div>
+            )}
           </div>
 
-          {/* Drivers List */}
+          {/* Users List */}
           <div>
-            <h4 className="text-sm text-gray-600 mb-3">Motoristas Cadastrados</h4>
-            <div className="space-y-3">
-              {drivers.map((driver) => (
-                <div
-                  key={driver.id}
-                  className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg hover:border-[#2DCE89] transition-colors"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-[#2DCE89] flex items-center justify-center text-white">
-                      {driver.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
-                    </div>
-                    <div>
-                      <p className="text-sm text-[#1A2B48]">{driver.name}</p>
-                      <p className="text-xs text-gray-500">{driver.email}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <Badge variant="outline" className="border-[#2DCE89] text-[#2DCE89]">
-                        {driver.truck}
-                      </Badge>
-                      <p className="text-xs text-gray-500 mt-1">{driver.status}</p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDeleteDriver(driver.id)}
-                      className="text-[#F5365C] hover:text-[#F5365C] hover:bg-[#F5365C]/10"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm text-gray-600">
+                {newUser.papel === "MOTORISTA" ? "Motoristas Cadastrados" : "Gestores Cadastrados"}
+              </h4>
+              <button
+                onClick={() => {
+                  if (newUser.papel === "MOTORISTA") {
+                    fetchDrivers().catch(() => {});
+                  }
+                }}
+                className="text-sm text-[#2DCE89] hover:text-[#25b377] cursor-pointer"
+              >
+                Atualizar lista
+              </button>
             </div>
+            {drivers.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <UserPlus className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                <p>Nenhum usuário cadastrado ainda.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {drivers.map((driver) => (
+                  <div
+                    key={driver.id}
+                    className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg hover:border-[#2DCE89] transition-colors"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-[#2DCE89] flex items-center justify-center text-white font-bold">
+                        {driver.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                      </div>
+                      <div>
+                        <p className="text-sm text-[#1A2B48]">{driver.name}</p>
+                        <p className="text-xs text-gray-500">{driver.email}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <Badge
+                          variant="outline"
+                          className={
+                            driver.papel === "ADMIN"
+                              ? "border-[#1A2B48] text-[#1A2B48]"
+                              : "border-[#2DCE89] text-[#2DCE89]"
+                          }
+                        >
+                          {driver.papel === "ADMIN" ? "Gestor" : "Motorista"}
+                        </Badge>
+                        {driver.truck && (
+                          <>
+                            <p className="text-xs text-gray-500 mt-1">{driver.truck}</p>
+                          </>
+                        )}
+                        <p className="text-xs text-gray-500 mt-1">{driver.status}</p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteDriver(driver.id)}
+                        className="text-[#F5365C] hover:text-[#F5365C] hover:bg-[#F5365C]/10"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

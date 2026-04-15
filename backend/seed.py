@@ -26,8 +26,9 @@ CREATE TABLE IF NOT EXISTS ocorrencias (
     cep VARCHAR(9),
     endereco VARCHAR(255),
     numero VARCHAR(20),
-    latitude DECIMAL(10, 8),
-    longitude DECIMAL(11, 8),
+    bairro VARCHAR(100),
+    latitude DECIMAL(10, 8) NOT NULL,
+    longitude DECIMAL(11, 8) NOT NULL,
     descricao TEXT,
     imagem_path VARCHAR(255),
     status VARCHAR(50) DEFAULT 'PENDENTE',
@@ -58,17 +59,29 @@ CREATE TABLE IF NOT EXISTS historico_limpeza (
 
 def seed_db():
     try:
-        db_path = os.path.join(os.path.dirname(__file__), "zelamapa.db")
+        base_dir = os.path.dirname(__file__)
+        db_path = os.path.join(base_dir, "zelamapa.db")
+
+        # Se banco já existe, não recria (preserva dados)
         if os.path.exists(db_path):
-            os.remove(db_path) # Limpa tudo recriando
-            
+            print(f"[Seed] Banco já existe em {db_path}. Mantendo dados existentes.")
+            # Apenas garantimos que as tabelas existem
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            cursor.executescript(SCHEMA)
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return
+
+        # Cria novo banco
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
-        
+
         # Executa schema
         cursor.executescript(SCHEMA)
-        
-        # Tipos
+
+        # Tipos de ocorrência
         tipos = [
             ("Entulho", "mdi-debris"),
             ("Móveis", "mdi-sofa"),
@@ -76,7 +89,7 @@ def seed_db():
         ]
         for t in tipos:
             cursor.execute("INSERT INTO tipos_ocorrencia (nome, icone) VALUES (?, ?)", t)
-            
+
         # Usuarios
         usuarios = [
             ("Gestor", "gestor@pompeia.sp.gov.br", "hash", "ADMIN"),
@@ -87,34 +100,34 @@ def seed_db():
         ]
         for u in usuarios:
             cursor.execute("INSERT INTO usuarios (nome, email, senha_hash, papel) VALUES (?, ?, ?, ?)", u)
-        
-        # Ocorrencias simuladas Pompeia
+
+        # Ocorrencias com bairro
         ocorrencias = [
-            (5, 1, "123.456.789-00", "(14) 98888-1111", "17580-000", "Rua Sen. Eurico Ribeiro", "10", -22.102, -50.176, "Entulho na calçada", "CONCLUIDO"),
-            (5, 2, "123.456.789-00", "(14) 98888-1111", "17580-000", "Rua Luiz Cunha", "20", -22.106, -50.170, "Sofá abandonado", "EM_ANDAMENTO"),
-            (5, 3, "123.456.789-00", "(14) 98888-1111", "17580-000", "Rua Rodolfo Miranda", "30", -22.110, -50.178, "Galhos cortados de árvore", "PENDENTE"),
-            (5, 1, "123.456.789-00", "(14) 98888-1111", "17580-000", "Rua Getúlio Vargas", "40", -22.115, -50.165, "Resto de obra bloqueando rua", "PENDENTE"),
-            (5, 2, "123.456.789-00", "(14) 98888-1111", "17580-000", "Rua Dr. Luiz Miranda", "50", -22.100, -50.160, "Colchão velho e estante", "PENDENTE"),
-            (5, 1, "123.456.789-00", "(14) 98888-1111", "17580-000", "Avenida Expedicionários", "60", -22.105, -50.175, "Tijolos soltos na praça", "PENDENTE"),
+            (5, 1, "123.456.789-00", "(14) 98888-1111", "17580-000", "Rua Sen. Eurico Ribeiro", "10", "Centro", -22.102, -50.176, "Entulho na calçada", "CONCLUIDO"),
+            (5, 2, "123.456.789-00", "(14) 98888-1111", "17580-000", "Rua Luiz Cunha", "20", "Jardim Alvorada", -22.106, -50.170, "Sofá abandonado", "EM_ANDAMENTO"),
+            (5, 3, "123.456.789-00", "(14) 98888-1111", "17580-000", "Rua Rodolfo Miranda", "30", "Vila Nova", -22.110, -50.178, "Galhos cortados de árvore", "PENDENTE"),
+            (5, 1, "123.456.789-00", "(14) 98888-1111", "17580-000", "Rua Getúlio Vargas", "40", "São José", -22.115, -50.165, "Resto de obra bloqueando rua", "PENDENTE"),
+            (5, 2, "123.456.789-00", "(14) 98888-1111", "17580-000", "Rua Dr. Luiz Miranda", "50", "Centro", -22.100, -50.160, "Colchão velho e estante", "PENDENTE"),
+            (5, 1, "123.456.789-00", "(14) 98888-1111", "17580-000", "Avenida Expedicionários", "60", "Pompeia Central", -22.105, -50.175, "Tijolos soltos na praça", "PENDENTE"),
         ]
         for oc in ocorrencias:
             cursor.execute("""
-                INSERT INTO ocorrencias (usuario_id, tipo_id, cpf, telefone, cep, endereco, numero, latitude, longitude, descricao, status) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO ocorrencias (usuario_id, tipo_id, cpf, telefone, cep, endereco, numero, bairro, latitude, longitude, descricao, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, oc)
-            
+
         # Ordens de Servico
         os_data = [
-            (1, 2, 'CONCLUIDA'), # Oco 1, João
-            (2, 2, 'EM_ROTA')    # Oco 2, João
+            (1, 2, 'CONCLUIDA'),  # Oco 1, João
+            (2, 2, 'EM_ROTA')     # Oco 2, João
         ]
         for o in os_data:
             cursor.execute("INSERT INTO ordens_servico (ocorrencia_id, motorista_id, status) VALUES (?, ?, ?)", o)
-            
+
         conn.commit()
         cursor.close()
         conn.close()
-        print("Banco SQLite populado com sucesso (Seed)!")
+        print(f"Banco SQLite populado com sucesso (Seed)!DB: {db_path}")
     except sqlite3.Error as e:
         print(f"Erro ao seedar banco SQLite: {e}")
 

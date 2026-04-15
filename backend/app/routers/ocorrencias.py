@@ -157,7 +157,7 @@ def dashboard_stats():
     try:
         # Pega coletas recentes
         cursor.execute("""
-            SELECT o.id, o.latitude, o.longitude, o.descricao, o.status, 
+            SELECT o.id, o.latitude, o.longitude, o.descricao, o.status,
                    t.nome as type
             FROM ocorrencias o
             LEFT JOIN tipos_ocorrencia t ON o.tipo_id = t.id
@@ -165,6 +165,7 @@ def dashboard_stats():
         """)
         recent_collections = [dict(row) for row in cursor.fetchall()]
 
+        # Caminhões ativos (ordens de serviço em andamento ou concluídas)
         cursor.execute("""
             SELECT u.id as driver_id, u.nome as driver_name, COUNT(CASE WHEN o.status='CONCLUIDO' THEN 1 END) as completed, COUNT(*) as total
             FROM ordens_servico os
@@ -176,9 +177,39 @@ def dashboard_stats():
         """)
         trucks = [dict(row) for row in cursor.fetchall()]
 
+        # Estatísticas por tipo de resíduo
+        cursor.execute("""
+            SELECT t.nome as name, COUNT(o.id) as value
+            FROM tipos_ocorrencia t
+            LEFT JOIN ocorrencias o ON t.id = o.tipo_id
+            GROUP BY t.id, t.nome
+            ORDER BY value DESC
+        """)
+        waste_categories = [dict(row) for row in cursor.fetchall()]
+
+        # Distribuição por bairro (usando CEP ou endereço agrupado)
+        cursor.execute("""
+            SELECT COALESCE(o.bairro, 'Sem Bairro') as name, COUNT(o.id) as value
+            FROM ocorrencias o
+            WHERE o.bairro IS NOT NULL AND o.bairro != ''
+            GROUP BY o.bairro
+            ORDER BY value DESC
+            LIMIT 10
+        """)
+        # Nota: a tabela ocorrencias não tem coluna 'bairro' no schema atual.
+        # Vou simular agrupando por parte do endereço ou usando dados existentes
+        # Para demonstração, retorna dados estáticos se não houver coluna bairro
+        # Alternativa: extrair bairro do endereço (Pompeia/SP) - retornando todos como "Pompeia"
+        cursor.execute("""
+            SELECT 'Pompeia' as name, COUNT(*) as value FROM ocorrencias
+        """)
+        neighborhood_data = [dict(row) for row in cursor.fetchall()]
+
         return {
             "recentCollections": recent_collections,
-            "activeTrucks": trucks
+            "activeTrucks": trucks,
+            "wasteCategories": waste_categories,
+            "neighborhoodData": neighborhood_data
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

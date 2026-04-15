@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 import os
 
 # Import routers
-from app.routers import ocorrencias, limpeza
+from app.routers import ocorrencias, limpeza, auth
 
 app = FastAPI(title="ZelaMapa GovTech API")
 
@@ -30,6 +30,7 @@ app.mount("/uploads", StaticFiles(directory=upload_dir), name="uploads")
 # Include routers
 app.include_router(ocorrencias.router, tags=["Ocorrências"])
 app.include_router(limpeza.router, tags=["Limpeza Interna"])
+app.include_router(auth.router, prefix="/api/auth", tags=["Autenticação"])
 
 @app.get("/")
 def read_root():
