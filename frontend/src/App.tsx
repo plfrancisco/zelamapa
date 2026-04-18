@@ -1,27 +1,31 @@
-import { useState } from 'react';
+import { useAuthStore } from './stores/authStore';
 import LandingPage from './views/LandingPage';
 import ManagerDashboard from './views/ManagerDashboard';
-import FigmaDriverApp from './views/FigmaDriverApp';
+import DriverLayout from './components/driver/DriverLayout';
 import UserRequestApp from './views/UserRequestApp';
 
 export default function App() {
-  const [role, setRole] = useState<'motorista' | 'gerente' | 'cidadao' | null>(null);
+  const { user, logout } = useAuthStore();
 
-  // FLUXO DE DESLOGADO (LANDING PAGE COM MODAL DE LOGIN)
-  if (!role) {
-    return <LandingPage onLogin={(r) => setRole(r)} />;
+  const handleLogin = (newRole: string) => {
+    console.log("Login sequence started for:", newRole);
+  };
+
+  // FLUXO DE DESLOGADO
+  if (!user) {
+    return <LandingPage onLogin={handleLogin} />;
   }
 
-  // FLUXO DO CIDADÃO
-  if (role === 'cidadao') {
-    return <UserRequestApp onLogout={() => setRole(null)} />;
+  // FLUXO DO CIDADÃO / CADASTRADOR
+  if (user.papel === 'CADASTRADOR') {
+    return <UserRequestApp onLogout={logout} />;
   }
 
-  // FLUXO DO MOTORISTA (APP FULLSCREEN UBER DO FIGMA)
-  if (role === 'motorista') {
-    return <FigmaDriverApp onLogout={() => setRole(null)} />;
+  // FLUXO DO MOTORISTA
+  if (user.papel === 'MOTORISTA') {
+    return <DriverLayout />;
   }
 
-  // FLUXO DO GERENTE (DASHBOARD DO FIGMA)
-  return <ManagerDashboard onLogout={() => setRole(null)} />;
+  // FLUXO DO GERENTE (GESTOR / ADMIN)
+  return <ManagerDashboard />;
 }

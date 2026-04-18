@@ -1,0 +1,35 @@
+version: '3.8'
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: bdzelamapa
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 2307
+      MYSQL_DATABASE: zelamapa
+      MYSQL_USER: zelamapa
+      MYSQL_PASSWORD: 2307
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init_schema.sql:/docker-entrypoint-initdb.d/init_schema.sql
+    command: --default-authentication-plugin=mysql_native_password
+    networks:
+      - zelamapa_net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+volumes:
+  mysql_data:
+
+networks:
+  zelamapa_net:
+    driver: bridge

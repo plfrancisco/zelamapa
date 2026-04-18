@@ -1,3 +1,40 @@
-.env\n.idea/\n.vscode/
-node_modules/\nbackend/zelamapa.db\nbackend/uploads/\nfrontend/node_modules/
+# Dependências
+node_modules/
+frontend/node_modules/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env
+
+# Banco de Dados
+*.db
+*.sqlite3
+
+# Logs e Processos
+*.log
+*.pid
+*.out
+
+# IDEs e Editores
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Build e Deploy
+dist/
+frontend/dist/
+build/
 .agent/
+.killo/
+
+# Uploads
+backend/uploads/*
+!backend/uploads/.gitkeep
+uploads/

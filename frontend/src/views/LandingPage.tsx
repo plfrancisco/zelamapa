@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Recycle, MapPin, Calendar, Users, TrendingUp, CheckCircle, 
-  ArrowRight, X, Mail, Lock, Leaf, Truck, BarChart3, Shield 
+  MapPin, Calendar, Users, TrendingUp, CheckCircle, 
+  ArrowRight, X, Mail, Lock, Leaf, Truck, BarChart3, Shield, AlertCircle, Loader2
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { login } from '../services/authService';
+import { ZelaMapaFullLogo } from '../components/ZelaMapaLogos';
 
 interface LandingPageProps {
   onLogin: (role: 'motorista' | 'gerente' | 'cidadao') => void;
@@ -17,6 +19,10 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginType, setLoginType] = useState<'gerente' | 'motorista'>('gerente');
+  const [email, setEmail] = useState('');
+  const [senha, setSenha] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   // Sticky header effect
   useEffect(() => {
@@ -27,9 +33,22 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onLogin(loginType);
+    setError('');
+    setLoading(true);
+
+    try {
+      // O authService.login agora atualiza o useAuthStore automaticamente
+      await login(email, senha);
+      setShowLoginModal(false);
+      // O App.tsx vai detectar que user != null e redirecionar
+    } catch (err: any) {
+      console.error('Erro no login:', err);
+      setError(err.message || 'Falha no login. Verifique suas credenciais.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -43,13 +62,7 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center text-white">
           <div className="flex items-center gap-3">
-            <div className="bg-[#2DCE89] p-2 rounded-xl">
-              <Recycle className="h-6 w-6 text-white" />
-            </div>
-            <div className="flex flex-col">
-              <h1 className="text-xl font-bold tracking-tight leading-tight">Pompeia Coletas</h1>
-              <span className="text-xs text-[#5e8cf7] font-medium hidden sm:block">Sistema Municipal de Gestão de Resíduos</span>
-            </div>
+            <ZelaMapaFullLogo className="h-12 scale-90 origin-left" variant={isScrolled ? 'dark' : 'light'} />
           </div>
           
           <nav className="hidden md:flex gap-8 items-center text-sm font-medium text-gray-200">
@@ -81,7 +94,7 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
                 🌱 Cidade Sustentável
               </Badge>
               <h1 className="text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1]">
-                Gestão Inteligente de <span className="text-[#2DCE89] inline-block -rotate-1 origin-left">Resíduos</span> para Pompeia
+                Gestão Inteligente de <span className="text-[#2DCE89] inline-block -rotate-1 origin-left">Resíduos</span> com o ZelaMapa
               </h1>
               <p className="text-lg text-gray-300 max-w-xl leading-relaxed">
                 Sistema avançado de agendamento e otimização de rotas para coletas de entulho, móveis e poda. Mantendo nossa cidade limpa com dados em tempo real.
@@ -307,10 +320,7 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
             
             <div className="col-span-1 md:col-span-1">
               <div className="flex items-center gap-3 mb-6">
-                <div className="bg-[#2DCE89] p-2 rounded-lg">
-                  <Recycle className="h-5 w-5 text-white" />
-                </div>
-                <h1 className="text-lg font-bold">Pompeia Coletas</h1>
+                <ZelaMapaFullLogo className="h-10 scale-90 origin-left" variant="light" />
               </div>
               <p className="text-gray-400 text-sm font-medium leading-relaxed">
                 Plataforma oficial da Prefeitura de Pompeia para modernização do descarte responsável e limpeza urbana inteligente.
@@ -405,21 +415,34 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                     <Input 
                       type="email" 
-                      placeholder="Identificação do Funcionário" 
+                      placeholder="Email institucional"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
                       className="pl-10 h-12 bg-white rounded-xl border-gray-200 text-[#1A2B48] placeholder:text-gray-400 font-medium focus-visible:ring-[#2DCE89]"
                       required
+                      disabled={loading}
                     />
                   </div>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                     <Input 
                       type="password" 
-                      placeholder="Senha do Sistema" 
+                      placeholder="Senha"
+                      value={senha}
+                      onChange={(e) => setSenha(e.target.value)}
                       className="pl-10 h-12 bg-white rounded-xl border-gray-200 text-[#1A2B48] placeholder:text-gray-400 font-medium focus-visible:ring-[#2DCE89]"
                       required
+                      disabled={loading}
                     />
                   </div>
                 </div>
+
+                {error && (
+                  <div className="bg-red-50 text-red-600 p-3 rounded-lg flex items-center gap-2 text-sm">
+                    <AlertCircle size={16} />
+                    <span>{error}</span>
+                  </div>
+                )}
 
                 <div className="flex justify-between items-center px-1">
                   <a href="#" className="text-sm font-bold text-[#5e8cf7] hover:text-[#4b7ce6] transition-colors">
@@ -429,9 +452,17 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
 
                 <Button 
                   type="submit" 
-                  className="w-full bg-[#2DCE89] hover:bg-[#25B477] text-white h-12 rounded-xl font-bold shadow-md shadow-[#2DCE89]/20"
+                  disabled={loading}
+                  className="w-full bg-[#2DCE89] hover:bg-[#25B477] text-white h-12 rounded-xl font-bold shadow-md shadow-[#2DCE89]/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  Confirmar Acesso Externo
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Autenticando...
+                    </>
+                  ) : (
+                    'Confirmar Acesso'
+                  )}
                 </Button>
               </form>
             </CardContent>

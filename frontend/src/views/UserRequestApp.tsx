@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { ZelaMapaFullLogo } from '../components/ZelaMapaLogos';
 
 interface UserRequestAppProps {
   onLogout?: () => void;
@@ -153,12 +154,13 @@ export default function UserRequestApp({ onLogout }: UserRequestAppProps) {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 text-gray-800">
-      <header className="bg-green-600 text-white p-4 shadow-md z-10 w-full relative flex justify-between items-center">
-        <div>
-          <h1 className="text-xl font-bold flex items-center gap-2">
-            ZelaMapa - Cidadão
-          </h1>
-          <p className="text-sm text-green-100">Solicite coleta com seu endereço e CPF</p>
+      <header className="bg-[#2DCE89] text-white p-4 pb-2 shadow-md z-10 w-full relative flex justify-between items-start">
+        <div className="flex flex-col">
+          <div className="flex items-center gap-2">
+            <ZelaMapaFullLogo variant="light" className="scale-75 origin-left h-8" />
+            <span className="text-sm font-bold bg-white/20 px-2 py-0.5 rounded text-white -ml-2 mb-1">CIDADÃO</span>
+          </div>
+          <p className="text-xs text-white/90 mt-1">Solicite coleta com seu endereço e CPF</p>
         </div>
         {onLogout && (
           <button onClick={onLogout} className="bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer">

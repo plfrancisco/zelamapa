@@ -1,172 +1,174 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends, status, Request
 from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
 import bcrypt
-import re
+from datetime import datetime, timedelta
+from jose import JWTError, jwt
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 router = APIRouter()
 
+# Configurações JWT
+SECRET_KEY = os.getenv("JWT_SECRET", "zelamapa_secret_key_change_in_production")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 dias
+
+# Modelos Pydantic
+class UserLogin(BaseModel):
+    email: EmailStr
+    senha: str
 
 class UserRegister(BaseModel):
     nome: str
     email: EmailStr
     senha: str
-    papel: str  # "MOTORISTA" ou "ADMIN"
+    papel: str = "MOTORISTA"
     caminhao_id: Optional[str] = None
 
-    @field_validator('nome')
-    @classmethod
-    def nome_nao_vazio(cls, v):
-        if not v or not v.strip():
-            raise ValueError('Nome não pode estar vazio')
-        return v.strip()
-
-    @field_validator('senha')
-    @classmethod
-    def senha_valida(cls, v):
-        if len(v) < 6:
-            raise ValueError('Senha deve ter pelo menos 6 caracteres')
-        return v
-
-    @field_validator('papel')
-    @classmethod
-    def papel_valido(cls, v):
-        v = v.upper()
-        if v not in ['MOTORISTA', 'ADMIN']:
-            raise ValueError('Papel deve ser MOTORISTA ou ADMIN')
-        return v
-
-
+# Funções auxiliares
 def hash_password(senha_plana: str) -> str:
-    """Gera hash bcrypt para a senha."""
-    # Bcrypt tem limite de 72 bytes, então codificamos e truncamos se necessário
     senha_bytes = senha_plana.encode('utf-8')
-    if len(senha_bytes) > 72:
-        senha_bytes = senha_bytes[:72]
     hashed = bcrypt.hashpw(senha_bytes, bcrypt.gensalt(rounds=12))
     return hashed.decode('utf-8')
 
+def verify_password(senha_plana: str, senha_hash: str) -> bool:
+    return bcrypt.checkpw(senha_plana.encode('utf-8'), senha_hash.encode('utf-8'))
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+async def get_current_user(request: Request):
+    from ..database import get_db_connection
+    auth = request.headers.get("Authorization")
+    if not auth: raise HTTPException(status_code=401, detail="Não autorizado")
+    
+    token = auth.split(" ")[1] if " " in auth else auth
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+        if user_id is None: raise HTTPException(status_code=401, detail="Token inválido")
+    except JWTError: raise HTTPException(status_code=401, detail="Token expirado")
+
+    conn = get_db_connection()
+    is_sqlite = not hasattr(conn, "ping")
+    cursor = conn.cursor(dictionary=not is_sqlite)
+    try:
+        placeholder = "?" if is_sqlite else "%s"
+        cursor.execute(f"SELECT id, nome, email, papel FROM usuarios WHERE id = {placeholder}", (user_id,))
+        user = cursor.fetchone()
+        if not user: raise HTTPException(status_code=401, detail="Usuário inexistente")
+        return dict(user) if is_sqlite else user
+    finally:
+        cursor.close()
+        conn.close()
+
+# ENDPOINTS
 
 @router.post("/register")
-def register_user(user: UserRegister):
-    """
-    Cadastra um novo usuário (motorista ou gestor/admin).
-    O email deve ser único no sistema.
-    A senha é armazenada com hash bcrypt.
-    """
+async def register(user_data: UserRegister):
     from ..database import get_db_connection
-
     conn = get_db_connection()
-    if not conn:
-        raise HTTPException(status_code=500, detail="Erro de conexão com banco de dados")
-
+    if not conn: raise HTTPException(status_code=500, detail="Erro DB")
+    is_sqlite = not hasattr(conn, "ping")
+    placeholder = "?" if is_sqlite else "%s"
     cursor = conn.cursor()
     try:
-        # Verificar se email já existe
-        cursor.execute("SELECT id FROM usuarios WHERE email = ?", (user.email,))
-        if cursor.fetchone():
-            raise HTTPException(status_code=409, detail="Email já cadastrado")
-
-        # Gerar hash da senha
-        senha_hash = hash_password(user.senha)
-
-        # Inserir usuário
-        cursor.execute(
-            """
-            INSERT INTO usuarios (nome, email, senha_hash, papel)
-            VALUES (?, ?, ?, ?)
-            """,
-            (user.nome, user.email, senha_hash, user.papel)
-        )
+        cursor.execute(f"SELECT id FROM usuarios WHERE email = {placeholder}", (user_data.email,))
+        if cursor.fetchone(): raise HTTPException(status_code=400, detail="Email já existe")
+        
+        pw_hash = hash_password(user_data.senha)
+        cursor.execute(f"""
+            INSERT INTO usuarios (email, senha_hash, nome, papel, ativo)
+            VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, 1)
+        """, (user_data.email, pw_hash, user_data.nome, user_data.papel))
+        
         user_id = cursor.lastrowid
+        if user_data.papel == "MOTORISTA":
+            cursor.execute(f"""
+                INSERT INTO motoristas 
+                (usuario_id, placa_caminhao, cnh, cnh_categoria, cnh_validade, disponibilidade)
+                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, 'OFFLINE')
+            """, (user_id, user_data.caminhao_id or "", "N/A", "B", "2099-12-31"))
+        
         conn.commit()
-
-        return {
-            "success": True,
-            "userId": user_id,
-            "message": f"Usuário '{user.nome}' cadastrado com sucesso como {user.papel}"
-        }
-    except HTTPException:
-        raise
+        return {"success": True, "message": "Criado"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao cadastrar usuário: {str(e)}")
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         cursor.close()
         conn.close()
-
 
 @router.get("/usuarios")
-def list_users(papel: Optional[str] = None):
-    """
-    Lista todos os usuários cadastrados.
-    Opcionalmente filtra por papel (MOTORISTA ou ADMIN).
-    """
+async def listar_usuarios(papel: Optional[str] = None):
     from ..database import get_db_connection
-
     conn = get_db_connection()
-    if not conn:
-        raise HTTPException(status_code=500, detail="Erro de conexão com banco de dados")
-
-    cursor = conn.cursor()
+    is_sqlite = not hasattr(conn, "ping")
+    cursor = conn.cursor(dictionary=not is_sqlite)
     try:
+        query = "SELECT id, email, nome, papel, created_at FROM usuarios"
+        params = []
         if papel:
-            papel = papel.upper()
-            if papel not in ['MOTORISTA', 'ADMIN', 'CADASTRADOR']:
-                raise HTTPException(status_code=400, detail="Papel inválido")
-            cursor.execute(
-                "SELECT id, nome, email, papel, criado_em FROM usuarios WHERE papel = ? ORDER BY nome",
-                (papel,)
-            )
-        else:
-            cursor.execute("SELECT id, nome, email, papel, criado_em FROM usuarios ORDER BY nome")
-
+            query += " WHERE papel = ?" if is_sqlite else " WHERE papel = %s"
+            params.append(papel)
+        cursor.execute(query, params)
         rows = cursor.fetchall()
-        usuarios = [dict(row) for row in rows]
-        return {"usuarios": usuarios}
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao listar usuários: {str(e)}")
+        return {"usuarios": [dict(r) if is_sqlite else r for r in rows]}
     finally:
         cursor.close()
         conn.close()
-
 
 @router.delete("/usuarios/{user_id}")
-def delete_user(user_id: int):
-    """
-    Remove um usuário do sistema.
-    Não permite remover o último admin.
-    """
+async def deletar_usuario(user_id: int):
     from ..database import get_db_connection
-
     conn = get_db_connection()
-    if not conn:
-        raise HTTPException(status_code=500, detail="Erro de conexão com banco de dados")
-
+    if not conn: raise HTTPException(status_code=500, detail="Erro DB")
+    is_sqlite = not hasattr(conn, "ping")
+    placeholder = "?" if is_sqlite else "%s"
     cursor = conn.cursor()
     try:
-        # Verificar se usuário existe e é motorista (não pode deletar admin)
-        cursor.execute("SELECT nome, papel FROM usuarios WHERE id = ?", (user_id,))
-        user = cursor.fetchone()
-        if not user:
-            raise HTTPException(status_code=404, detail="Usuário não encontrado")
-
-        if user['papel'] == 'ADMIN':
-            # Contar quantos admins restantes
-            cursor.execute("SELECT COUNT(*) as count FROM usuarios WHERE papel = 'ADMIN'")
-            admin_count = cursor.fetchone()['count']
-            if admin_count <= 1:
-                raise HTTPException(status_code=400, detail="Não é possível remover o último administrador")
-
-        cursor.execute("DELETE FROM usuarios WHERE id = ?", (user_id,))
+        # A exclusão na tabela motoristas ocorre automaticamente devido ao ON DELETE CASCADE no BD
+        cursor.execute(f"DELETE FROM usuarios WHERE id = {placeholder}", (user_id,))
         conn.commit()
-
-        return {"success": True, "message": f"Usuário '{user['nome']}' removido com sucesso"}
-    except HTTPException:
-        raise
+        if cursor.rowcount == 0: raise HTTPException(status_code=404, detail="Não encontrado")
+        return {"success": True}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao remover usuário: {str(e)}")
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         cursor.close()
         conn.close()
+
+@router.post("/login")
+def login(user_login: UserLogin):
+    from ..database import get_db_connection
+    conn = get_db_connection()
+    is_sqlite = not hasattr(conn, "ping")
+    cursor = conn.cursor(dictionary=not is_sqlite)
+    try:
+        placeholder = "?" if is_sqlite else "%s"
+        cursor.execute(f"SELECT id, nome, email, senha_hash, papel FROM usuarios WHERE email = {placeholder}", (user_login.email,))
+        user = cursor.fetchone()
+        if is_sqlite and user: user = dict(user)
+        
+        if not user or not verify_password(user_login.senha, user['senha_hash']):
+            raise HTTPException(status_code=401, detail="Credenciais inválidas")
+            
+        token = create_access_token(data={"sub": str(user['id']), "papel": user['papel']})
+        return {
+            "success": True, "access_token": token, "token_type": "bearer",
+            "user": {"id": user['id'], "nome": user['nome'], "email": user['email'], "papel": user['papel']}
+        }
+    finally:
+        cursor.close()
+        conn.close()
+
+@router.get("/me")
+def get_me(current_user: dict = Depends(get_current_user)):
+    return {"success": True, "user": current_user}
