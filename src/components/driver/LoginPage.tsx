@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Mail, Lock, Loader2, AlertCircle, Truck } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
-import { login } from '../../api/authService'
+import { login } from '../../services/authService'
 import { useNavigate } from 'react-router'
 
 export default function LoginPage() {

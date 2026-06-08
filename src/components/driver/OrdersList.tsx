@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { MapPin, ChevronRight, AlertCircle, Inbox } from 'lucide-react'
 import { Card, CardContent } from '../ui/card'
 import { Badge } from '../ui/badge'
-import { orderService } from '../../api/orderService'
-import type { OrdemResponse } from '../../api/orderService'
+import { orderService } from '../../services/orderService'
+import type { OrdemResponse } from '../../services/orderService'
 import OrderDetailModal from './OrderDetailModal'
 
 interface OrdersListProps {

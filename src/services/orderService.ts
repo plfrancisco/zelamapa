@@ -22,33 +22,33 @@ export interface OrdemResponse {
 
 export const orderService = {
   getMinhasOrdens: async (): Promise<OrdemResponse[]> => {
-    const res = await api.get('/api/ordens/minhas')
+    const res = await api.get('/services/ordens/minhas')
     return res.data
   },
 
   getPendentes: async (): Promise<OrdemResponse[]> => {
-    const res = await api.get('/api/ordens/pendentes')
+    const res = await api.get('/services/ordens/pendentes')
     return res.data
   },
 
   aceitar: async (ordemId: number, motivo_recusa?: string) => {
-    await api.put(`/api/ordens/${ordemId}/aceitar`, { motivo_recusa })
+    await api.put(`/services/ordens/${ordemId}/aceitar`, { motivo_recusa })
   },
 
   iniciar: async (ordemId: number) => {
-    await api.put(`/api/ordens/${ordemId}/iniciar`)
+    await api.put(`/services/ordens/${ordemId}/iniciar`)
   },
 
   concluir: async (ordemId: number) => {
-    await api.put(`/api/ordens/${ordemId}/concluir`)
+    await api.put(`/services/ordens/${ordemId}/concluir`)
   },
 
   recusar: async (ordemId: number, motivo: string) => {
-    await api.put(`/api/ordens/${ordemId}/recusar`, { motivo_recusa: motivo })
+    await api.put(`/services/ordens/${ordemId}/recusar`, { motivo_recusa: motivo })
   },
 
   getRota: async (ordemId: number) => {
-    const res = await api.get(`/api/ordens/${ordemId}/rota`)
+    const res = await api.get(`/services/ordens/${ordemId}/rota`)
     return res.data
   },
 }

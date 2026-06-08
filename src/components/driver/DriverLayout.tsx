@@ -3,7 +3,7 @@ import { List, User, LogOut, MapPin, MapPinOff, Map as MapIcon } from 'lucide-re
 import { Button } from '../ui/button'
 import { useAuthStore } from '../../stores/authStore'
 import { useGeolocation } from '../../hooks/useGeolocation'
-import { socketService } from '../../api/socketService'
+import { socketService } from '../../services/socketService'
 import { toast } from 'sonner'
 import OrdersList from './OrdersList'
 import DriverMap from './DriverMap'

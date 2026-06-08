@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { locationService, type LocationPoint } from '../api/locationService'
+import { locationService, type LocationPoint } from '../services/locationService'
 
 export function useGeolocation(enabled: boolean = true) {
   const [position, setPosition] = useState<GeolocationPosition | null>(null)

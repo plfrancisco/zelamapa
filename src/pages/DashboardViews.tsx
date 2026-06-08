@@ -46,8 +46,8 @@ import {
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { toast } from "sonner";
-import { socketService } from "../api/socketService";
-import { getAuthHeaders } from "../api/authService";
+import { socketService } from "../services/socketService";
+import { getAuthHeaders } from "../services/authService";
 
 // Fix para ícones do Leaflet
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
@@ -88,7 +88,7 @@ export function ReportsBIView() {
   const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/bi/summary`)
+    fetch(`${API_BASE}/services/bi/summary`)
       .then(res => res.json())
       .then(json => {
         setData(json);
@@ -313,7 +313,7 @@ export function HeatmapView() {
 
   const fetchData = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/ocorrencias/dashboard-stats`);
+      const response = await fetch(`${API_BASE}/services/ocorrencias/dashboard-stats`);
       if (response.ok) {
         const data = await response.json();
         setStats(data);
@@ -661,7 +661,7 @@ export function ActiveRoutesView() {
     // 1. Carga Inicial
     const fetchData = async () => {
       try {
-        const response = await fetch(`${API_BASE}/api/ocorrencias/dashboard-stats`);
+        const response = await fetch(`${API_BASE}/services/ocorrencias/dashboard-stats`);
         if (response.ok) {
           const data = await response.json();
           setTrucks(data.activeTrucks || []);
@@ -811,9 +811,9 @@ export function SettingsView() {
     try {
       const headers = { ...getAuthHeaders() };
       const [resUsers, resConfig, resAudit] = await Promise.all([
-        fetch(`${API_BASE}/api/auth/usuarios`, { headers }),
-        fetch(`${API_BASE}/api/configuracoes/`, { headers }),
-        fetch(`${API_BASE}/api/configuracoes/audit`, { headers })
+        fetch(`${API_BASE}/services/auth/usuarios`, { headers }),
+        fetch(`${API_BASE}/services/configuracoes/`, { headers }),
+        fetch(`${API_BASE}/services/configuracoes/audit`, { headers })
       ]);
       
       if (resUsers.ok) {
@@ -844,7 +844,7 @@ export function SettingsView() {
   const handleUpdateConfigs = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE}/api/configuracoes/`, {
+      const res = await fetch(`${API_BASE}/services/configuracoes/`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -875,7 +875,7 @@ export function SettingsView() {
     if(!newUser.name || !newUser.email || !newUser.password) return toast.error("Preencha todos os campos!");
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/auth/register`, {
+      const res = await fetch(`${API_BASE}/services/auth/register`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -905,7 +905,7 @@ export function SettingsView() {
 
   const handleDelete = async (id: number) => {
     if (confirm("Tem certeza que deseja remover este usuário?")) {
-      await fetch(`${API_BASE}/api/auth/usuarios/${id}`, { 
+      await fetch(`${API_BASE}/services/auth/usuarios/${id}`, { 
         method: "DELETE",
         headers: getAuthHeaders()
       });

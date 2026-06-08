@@ -76,7 +76,7 @@ export default function UserRequestApp({ onLogout }: UserRequestAppProps) {
     const rawCpf = cpfValidar.replace(/\D/g, '');
     if (rawCpf.length !== 11) return;
     try {
-      const res = await fetch(`${API_BASE}/api/ocorrencias/validar-cpf/${rawCpf}`);
+      const res = await fetch(`${API_BASE}/services/ocorrencias/validar-cpf/${rawCpf}`);
       const data = await res.json();
       if (!data.valid) {
         setCpfError('CPF Inválido. Verifique o número.');
@@ -117,7 +117,7 @@ export default function UserRequestApp({ onLogout }: UserRequestAppProps) {
     }
 
     try {
-      const response = await fetch(`${API_BASE}/api/ocorrencias/`, {
+      const response = await fetch(`${API_BASE}/services/ocorrencias/`, {
         method: "POST",
         body: formData,
       });

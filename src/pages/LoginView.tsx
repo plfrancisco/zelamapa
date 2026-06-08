@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Lock, Mail, AlertCircle, Leaf, Loader2 } from 'lucide-react';
-import { login as loginService } from '../api/authService';
+import { login as loginService } from '../services/authService';
 
 interface Props {
   onLogin: (role: 'motorista' | 'gerente' | 'cidadao', userData?: any) => void;

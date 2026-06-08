@@ -13,7 +13,7 @@ import { Badge } from "../components/ui/badge";
 import { MapContainer, TileLayer, Marker, Polyline, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { getAuthHeaders } from "../api/authService";
+import { getAuthHeaders } from "../services/authService";
 
 interface Collection {
   id: number;
@@ -41,7 +41,7 @@ export default function FigmaDriverApp({ onLogout }: Props) {
     const fetchCollections = async () => {
       try {
         const headers = getAuthHeaders();
-        const response = await fetch(`${API_URL}/api/ocorrencias/pendentes`, {
+        const response = await fetch(`${API_URL}/services/ocorrencias/pendentes`, {
           headers,
         });
 
@@ -120,7 +120,7 @@ export default function FigmaDriverApp({ onLogout }: Props) {
     try {
       const headers = getAuthHeaders();
       const response = await fetch(
-        `${API_URL}/api/ocorrencias/${currentCollection.id}/concluir`,
+        `${API_URL}/services/ocorrencias/${currentCollection.id}/concluir`,
         {
           method: 'PUT',
           headers,

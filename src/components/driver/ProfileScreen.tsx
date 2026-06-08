@@ -4,7 +4,7 @@ import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
 import { useAuthStore } from '../../stores/authStore'
 import { toast } from 'sonner'
-import { getAuthHeaders } from '../../api/authService'
+import { getAuthHeaders } from '../../services/authService'
 
 interface ProfileScreenProps {
   onLogout: () => void
@@ -26,7 +26,7 @@ export default function ProfileScreen({ onLogout }: ProfileScreenProps) {
   useEffect(() => {
     const fetchDriverData = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/motorista/me`, {
+        const res = await fetch(`${API_URL}/services/motorista/me`, {
           headers: getAuthHeaders()
         })
         if (res.ok) {
@@ -80,7 +80,7 @@ export default function ProfileScreen({ onLogout }: ProfileScreenProps) {
 
     setChangingPassword(true)
     try {
-      const response = await fetch(`${API_URL}/api/auth/update-password`, {
+      const response = await fetch(`${API_URL}/services/auth/update-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

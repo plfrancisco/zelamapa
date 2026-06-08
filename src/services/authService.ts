@@ -25,7 +25,7 @@ export async function login(email: string, senha: string) {
     formData.append('username', email);
     formData.append('password', senha);
 
-    const response = await fetch(`${API_URL}/api/auth/login`, {
+    const response = await fetch(`${API_URL}/services/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -44,7 +44,7 @@ export async function login(email: string, senha: string) {
       
       // Como o login OAuth2 do FastAPI não retorna o objeto user,
       // buscamos o perfil do usuário logo em seguida
-      const userResponse = await fetch(`${API_URL}/api/auth/me`, {
+      const userResponse = await fetch(`${API_URL}/services/auth/me`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${data.access_token}`,
@@ -77,7 +77,7 @@ export async function getCurrentUser() {
     const token = getToken();
     if (!token) throw new Error('Não autenticado');
 
-    const response = await fetch(`${API_URL}/api/auth/me`, {
+    const response = await fetch(`${API_URL}/services/auth/me`, {
       method: 'GET',
       headers: { 'Authorization': `Bearer ${token}` },
     });
@@ -102,7 +102,7 @@ export async function logout() {
   try {
     const token = getToken();
     if (token) {
-      await fetch(`${API_URL}/api/auth/logout`, {
+      await fetch(`${API_URL}/services/auth/logout`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
       });

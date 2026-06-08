@@ -15,7 +15,7 @@ import { Card, CardContent } from "../components/ui/card";
 import { HeatmapView, ActiveRoutesView, SettingsView, ReportsBIView } from "./DashboardViews";
 import { ZelaMapaFullLogo } from "../components/ZelaMapaLogos";
 import { useAuthStore } from "../stores/authStore";
-import { socketService } from "../api/socketService";
+import { socketService } from "../services/socketService";
 import { toast } from "sonner";
 
 interface ManagerDashboardProps {
@@ -32,7 +32,7 @@ export default function ManagerDashboard({ onLogout }: ManagerDashboardProps) {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/ocorrencias/dashboard-stats`);
+      const response = await fetch(`${API_BASE}/services/ocorrencias/dashboard-stats`);
       if (response.ok) {
         const data = await response.json();
         setStats(data);

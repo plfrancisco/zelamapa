@@ -1,5 +1,5 @@
 import { useAuthStore } from './stores/authStore';
-import { logout as logoutService } from './api/authService';
+import { logout as logoutService } from '@/services/authService';
 import LandingPage from './pages/LandingPage';
 import ManagerDashboard from './pages/ManagerDashboard';
 import DriverLayout from './components/driver/DriverLayout';

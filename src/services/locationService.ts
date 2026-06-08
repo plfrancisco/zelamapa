@@ -14,7 +14,7 @@ export interface LocationPoint {
 export const locationService = {
   sendBatch: async (locations: LocationPoint[]) => {
     try {
-      const res = await api.post('/api/localizacao/batch', { localizacoes: locations })
+      const res = await api.post('/services/localizacao/batch', { localizacoes: locations })
       return res.data
     } catch (err) {
       console.error('[LocationService] Failed to send batch:', err)
@@ -23,7 +23,7 @@ export const locationService = {
   },
 
   getUltima: async (motoristaId: number) => {
-    const res = await api.get(`/api/localizacao/ultima/${motoristaId}`)
+    const res = await api.get(`/services/localizacao/ultima/${motoristaId}`)
     return res.data
   }
 }

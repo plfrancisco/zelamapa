@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { login } from '../api/authService';
+import { login } from '../services/authService';
 import { ZelaMapaFullLogo } from '../components/ZelaMapaLogos';
 
 interface LandingPageProps {

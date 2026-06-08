@@ -5,8 +5,8 @@ import {
 } from 'lucide-react'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
-import { orderService, type OrdemResponse } from '../../api/orderService'
-import { API_URL } from '../../api/legacy_api'
+import { orderService, type OrdemResponse } from '../../services/orderService'
+import { API_URL } from '../../services/legacy_api'
 
 interface OrderDetailModalProps {
   order: OrdemResponse | null

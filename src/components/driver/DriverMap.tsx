@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { Navigation, LocateFixed, AlertCircle } from 'lucide-react'
-import { orderService } from '../../api/orderService'
+import { orderService } from '../../services/orderService'
 
 // Corrigir ícones do Leaflet que somem com o build do Vite
 import icon from 'leaflet/dist/images/marker-icon.png'
