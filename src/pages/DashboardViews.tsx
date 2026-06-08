@@ -8,13 +8,11 @@ import {
   Truck,
   PieChart as PieIcon,
   BarChart3,
-  Moon,
   Sun,
   Award,
   Zap,
   DollarSign,
   Clock,
-  LayoutDashboard,
   CheckCircle2,
   Settings,
   Search,
@@ -24,7 +22,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import { Switch } from "../components/ui/switch";
 import { Label } from "../components/ui/label";
 import { useState, useEffect, useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Popup, LayersControl } from "react-leaflet";

@@ -24,7 +24,7 @@ export default function OrdersList({ onOrderAction }: OrdersListProps) {
       ])
       
       const combined = [...mine]
-      pending.forEach(p => {
+      pending.forEach((p: any) => {
         if (!combined.find(m => m.id === p.id)) {
           combined.push(p)
         }

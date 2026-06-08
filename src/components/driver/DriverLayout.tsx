@@ -26,7 +26,7 @@ export default function DriverLayout({ onLogout }: DriverLayoutProps) {
   useEffect(() => {
     if (user?.id) {
       socketService.connectDriver(user.id)
-      socketService.onNovaOrdem((data) => {
+      socketService.onNovaOrdem((data: any) => {
         toast.success('Nova Ordem Recebida!', {
           description: `OS #${data.ordem?.numero_os || ''} disponível.`,
           action: { label: 'Ver', onClick: () => setActiveTab('ordens') }

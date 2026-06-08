@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import {
-  TrendingUp,
   FileText,
   Settings,
   AlertCircle,
@@ -11,7 +10,6 @@ import {
   WifiOff,
   Truck,
   LayoutDashboard,
-  Search
 } from "lucide-react";
 import { Card, CardContent } from "../components/ui/card";
 import { HeatmapView, ActiveRoutesView, SettingsView, ReportsBIView } from "./DashboardViews";
