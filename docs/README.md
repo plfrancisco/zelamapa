@@ -52,8 +52,8 @@ python scripts/seed_massivo.py
 \`\`\`
 
 **Credenciais Padrão:**
-- **Admin:** `adm@zelamapa.com` / Senha: `admin`
-- **Motoristas:** `motorista1@zelamapa.com` até `motorista10@zelamapa.com` / Senha: `motorista 123`
+- **Admin:** `admin` / Senha: `admin`
+- **Motorista:** `motorista` / Senha: `123` (Adicionais: `motorista2` a `motorista10`)
 
 ## ✨ Funcionalidades
 

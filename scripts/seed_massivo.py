@@ -50,17 +50,17 @@ def seed_massivo():
         nomes = ["Ricardo", "Felipe", "Bruno", "Thiago", "Gustavo", "André", "Lucas", "Rafael", "Diego", "Rodrigo"]
         sobrenomes = ["Oliveira", "Souza", "Lima", "Pereira", "Ferreira", "Costa", "Rodrigues", "Almeida", "Nascimento", "Carvalho"]
         senha_admin_hash = hash_password("admin")
-        senha_motorista_hash = hash_password("motorista 123")
+        senha_motorista_hash = hash_password("123")
         
         # Criar Admin primeiro
         print("  🔑 Criando Admin...")
         cursor.execute("INSERT INTO usuarios (uuid, email, senha_hash, nome, papel) VALUES (UUID(), %s, %s, %s, %s)",
-                       ('admin@zelamapa.com', senha_admin_hash, 'Admin Master', 'ADMIN'))
+                       ('admin', senha_admin_hash, 'Admin Master', 'ADMIN'))
         
         motorista_ids = []
         for i in range(10):
             nome_completo = f"{nomes[i]} {sobrenomes[i]}"
-            email = f"motorista{i+1}@zelamapa.com"
+            email = "motorista" if i == 0 else f"motorista{i+1}"
             print(f"  🚛 Criando {email}...")
             
             # Criar Usuário

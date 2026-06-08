@@ -45,7 +45,7 @@ def create_admin(email: str, senha: str, nome: str = "Administrador"):
 
 if __name__ == "__main__":
     # CONFIGURE AQUI:
-    EMAIL = "adm@zelamapa.com"
+    EMAIL = "admin"
     SENHA = "admin"  # mudar para "admin" se preferir
     NOME = "Administrador"
 
