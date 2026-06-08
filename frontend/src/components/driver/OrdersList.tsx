@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { MapPin, ChevronRight, AlertCircle, Inbox } from 'lucide-react'
 import { Card, CardContent } from '../ui/card'
 import { Badge } from '../ui/badge'
-import { orderService } from '../../services/orderService'
-import type { OrdemResponse } from '../../services/orderService'
+import { orderService } from '../../api/orderService'
+import type { OrdemResponse } from '../../api/orderService'
 import OrderDetailModal from './OrderDetailModal'
 
 interface OrdersListProps {
@@ -58,53 +58,80 @@ export default function OrdersList({ onOrderAction }: OrdersListProps) {
   }
 
   return (
-    <div className="h-full overflow-y-auto p-4 space-y-4">
-      <div className="flex items-center justify-between px-2 mb-2">
-        <h2 className="text-xl font-bold text-white">Ordens</h2>
-        <Badge className="bg-[#2DCE89]/20 text-[#2DCE89] border-none">{orders.length} total</Badge>
+    <div className="h-full overflow-y-auto p-6 space-y-6 pb-20">
+      <div className="flex items-center justify-between px-2">
+        <div>
+          <h2 className="text-2xl font-black text-[#1A2B48] tracking-tight">Suas Missões</h2>
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-0.5">Operação em Tempo Real</p>
+        </div>
+        <Badge className="bg-[#2DCE89]/10 text-[#2DCE89] border-none font-black px-4 py-1.5 rounded-full">{orders.length} TOTAL</Badge>
       </div>
 
       {error && (
-        <div className="mx-2 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm flex items-center gap-2">
-          <AlertCircle className="w-4 h-4" />
+        <div className="mx-2 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-500 text-xs font-bold flex items-center gap-3">
+          <AlertCircle className="w-5 h-5" />
           {error}
         </div>
       )}
 
       {orders.length === 0 ? (
-        <div className="text-center text-gray-500 mt-20">
-          <Inbox className="w-16 h-16 mx-auto mb-4 opacity-20" />
-          <p className="text-lg font-medium">Tudo limpo por aqui!</p>
+        <div className="text-center py-20 flex flex-col items-center">
+          <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-xl mb-6">
+            <Inbox className="w-10 h-10 text-gray-200" />
+          </div>
+          <p className="text-lg font-black text-[#1A2B48] opacity-20">Tudo limpo por aqui!</p>
         </div>
       ) : (
-        <div className="grid gap-3">
+        <div className="grid gap-6">
           {orders.map((ordem) => (
             <Card 
               key={ordem.id} 
-              className={`border-gray-800 text-white cursor-pointer active:scale-[0.98] transition-all hover:bg-[#252a3a] ${
-                ordem.status === 'ABERTA' ? 'bg-[#1e293b]' : 'bg-[#1a1f2e]'
+              className={`border-none shadow-xl rounded-[32px] overflow-hidden cursor-pointer active:scale-[0.97] transition-all duration-300 hover:shadow-2xl ${
+                ordem.status === 'ABERTA' ? 'bg-gradient-to-br from-white to-blue-50/30' : 'bg-white'
               }`}
               onClick={() => setSelectedOrder(ordem)}
             >
-              <CardContent className="p-4 flex items-center gap-4">
-                <div className="flex-1 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Badge className={
-                      ordem.status === 'ABERTA' ? 'bg-blue-500 text-white' :
-                      ordem.status === 'ACEITA' ? 'bg-yellow-500/20 text-yellow-400' :
-                      ordem.status === 'EM_ROTA' ? 'bg-orange-500/20 text-orange-400' :
-                      'bg-green-500/20 text-green-400'
-                    }>
-                      {ordem.status === 'ABERTA' ? 'NOVO' : ordem.status}
-                    </Badge>
-                  </div>
-                  <p className="font-semibold text-sm line-clamp-1">{ordem.descricao}</p>
-                  <div className="flex items-center gap-1.5 text-xs text-gray-400">
-                    <MapPin className="w-3.5 h-3.5 text-[#2DCE89]" />
-                    <span className="truncate">{ordem.origem_endereco}</span>
+              <CardContent className="p-6">
+                <div className="flex justify-between items-start mb-4">
+                   <div className="flex flex-col gap-1">
+                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Prioridade</p>
+                      <Badge className={
+                        ordem.prioridade === 'URGENTE' ? 'bg-red-500 text-white shadow-lg shadow-red-500/20' :
+                        ordem.prioridade === 'ALTA' ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' :
+                        'bg-blue-500 text-white shadow-lg shadow-blue-500/20'
+                      }>
+                        {ordem.prioridade}
+                      </Badge>
+                   </div>
+                   <div className="text-right">
+                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Status</p>
+                      <span className={`text-[10px] font-black uppercase tracking-wider ${
+                        ordem.status === 'ABERTA' ? 'text-blue-500' :
+                        ordem.status === 'ACEITA' ? 'text-yellow-500' :
+                        ordem.status === 'EM_ROTA' ? 'text-orange-500' :
+                        'text-[#2DCE89]'
+                      }`}>
+                        {ordem.status === 'ABERTA' ? 'DISPONÍVEL' : ordem.status.replace('_', ' ')}
+                      </span>
+                   </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h3 className="text-xl font-black text-[#1A2B48] leading-tight tracking-tight line-clamp-2">
+                    {ordem.descricao}
+                  </h3>
+                  
+                  <div className="flex items-center gap-3 p-3 bg-[#F4F7FE] rounded-2xl border border-gray-100">
+                    <div className="w-8 h-8 bg-white rounded-xl shadow-sm flex items-center justify-center flex-shrink-0">
+                      <MapPin className="w-4 h-4 text-[#2DCE89]" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                       <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Localização</p>
+                       <p className="text-xs font-bold text-[#1A2B48] truncate">{ordem.origem_endereco}</p>
+                    </div>
+                    <ChevronRight className="text-gray-300 w-5 h-5" />
                   </div>
                 </div>
-                <ChevronRight className="text-gray-600 w-5 h-5" />
               </CardContent>
             </Card>
           ))}

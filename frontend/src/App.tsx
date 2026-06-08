@@ -1,14 +1,28 @@
 import { useAuthStore } from './stores/authStore';
-import LandingPage from './views/LandingPage';
-import ManagerDashboard from './views/ManagerDashboard';
+import { logout as logoutService } from './api/authService';
+import LandingPage from './pages/LandingPage';
+import ManagerDashboard from './pages/ManagerDashboard';
 import DriverLayout from './components/driver/DriverLayout';
-import UserRequestApp from './views/UserRequestApp';
+import UserRequestApp from './pages/UserRequestApp';
 
 export default function App() {
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
+
+  const handleLogout = async () => {
+    await logoutService();
+  };
 
   const handleLogin = (newRole: string) => {
-    console.log("Login sequence started for:", newRole);
+    if (newRole === 'cidadao') {
+      useAuthStore.getState().login('mock-token-cidadao', {
+        id: 0,
+        email: 'cidadao@zelamapa.com',
+        nome: 'Cidadão',
+        papel: 'CADASTRADOR'
+      });
+    } else {
+      console.log("Login sequence started for:", newRole);
+    }
   };
 
   // FLUXO DE DESLOGADO
@@ -18,14 +32,14 @@ export default function App() {
 
   // FLUXO DO CIDADÃO / CADASTRADOR
   if (user.papel === 'CADASTRADOR') {
-    return <UserRequestApp onLogout={logout} />;
+    return <UserRequestApp onLogout={handleLogout} />;
   }
 
   // FLUXO DO MOTORISTA
   if (user.papel === 'MOTORISTA') {
-    return <DriverLayout />;
+    return <DriverLayout onLogout={handleLogout} />;
   }
 
   // FLUXO DO GERENTE (GESTOR / ADMIN)
-  return <ManagerDashboard />;
+  return <ManagerDashboard onLogout={handleLogout} />;
 }

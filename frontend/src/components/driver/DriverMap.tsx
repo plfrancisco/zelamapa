@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { Navigation, LocateFixed, AlertCircle } from 'lucide-react'
-import { orderService } from '../../services/orderService'
+import { orderService } from '../../api/orderService'
 
 // Corrigir ícones do Leaflet que somem com o build do Vite
 import icon from 'leaflet/dist/images/marker-icon.png'
@@ -114,35 +114,35 @@ export default function DriverMap({ activeOrderId }: DriverMapProps) {
         {userPos && <MapResizer center={userPos} />}
       </MapContainer>
 
-      {/* Painel estilo Waze Superior */}
+      {/* Painel estilo Waze Superior Premium */}
       {activeOrderId && (
-        <div className="absolute top-4 left-4 right-4 z-[1000] animate-in slide-in-from-top duration-500">
-          <div className="bg-[#1a1f2e] border border-gray-800 rounded-2xl p-4 shadow-2xl flex items-center gap-4">
-            <div className="w-12 h-12 bg-[#2DCE89] rounded-xl flex items-center justify-center text-white">
-              <Navigation className="w-7 h-7" />
+        <div className="absolute top-6 left-6 right-6 z-[1000] animate-in slide-in-from-top duration-700">
+          <div className="bg-white/90 backdrop-blur-xl border border-white/20 rounded-[32px] p-5 shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex items-center gap-5">
+            <div className="w-14 h-14 bg-gradient-to-br from-[#2DCE89] to-[#209a65] rounded-2xl flex items-center justify-center text-white shadow-lg shadow-[#2DCE89]/20">
+              <Navigation className="w-8 h-8" />
             </div>
             <div className="flex-1">
-              <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Siga para o destino</p>
-              <h3 className="text-sm font-bold text-white leading-tight">Percurso iniciado via ZelaMapa</h3>
+              <p className="text-[10px] text-gray-400 uppercase font-black tracking-[0.2em] mb-1">Destino Ativo</p>
+              <h3 className="text-sm font-black text-[#1A2B48] leading-tight tracking-tight">Percurso Monitorado GovTech</h3>
             </div>
-            {loading && <div className="animate-spin rounded-full h-4 w-4 border-2 border-[#2DCE89] border-t-transparent" />}
+            {loading && <div className="animate-spin rounded-full h-5 w-5 border-2 border-[#2DCE89] border-t-transparent" />}
           </div>
         </div>
       )}
 
-      {/* Botão de Centralizar */}
+      {/* Botão de Centralizar Premium */}
       <button 
         onClick={() => {
           if (userPos) setUserPos([...userPos])
         }}
-        className="absolute bottom-6 right-6 z-[1000] p-4 bg-[#2DCE89] text-white rounded-full shadow-xl active:scale-95 transition-transform"
+        className="absolute bottom-32 right-6 z-[1000] p-5 bg-white text-[#1A2B48] rounded-full shadow-[0_15px_35px_rgba(0,0,0,0.2)] active:scale-90 transition-all hover:bg-[#F4F7FE]"
       >
-        <LocateFixed className="w-6 h-6" />
+        <LocateFixed className="w-7 h-7" />
       </button>
 
       {error && (
-        <div className="absolute bottom-20 left-4 right-4 z-[1000] bg-red-500 text-white p-3 rounded-xl flex items-center gap-2 text-sm">
-          <AlertCircle className="w-4 h-4" /> {error}
+        <div className="absolute bottom-32 left-6 right-20 z-[1000] bg-red-500 text-white p-4 rounded-2xl shadow-xl flex items-center gap-3 text-xs font-bold animate-in zoom-in-95">
+          <AlertCircle className="w-5 h-5" /> {error}
         </div>
       )}
     </div>

@@ -23,7 +23,7 @@ export const ZelaMapaIcon: React.FC<LogoProps> = ({ className = '', ...props }) 
       <circle cx="32" cy="32" r="18" fill="white"/>
       <path 
         d="M23.5 42C23.5 42 20.5 29 33 21C45 13 45.5 20 45.5 20C45.5 20 45.5 32 35.5 40.5C27.5 47 23.5 42 23.5 42Z" 
-        fill="#56B947"
+        fill="#8be9fd"
       />
       <path 
         d="M23.5 42C23.5 42 25 35 32 31.5" 

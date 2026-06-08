@@ -1,20 +1,25 @@
 import { useState, useEffect } from 'react'
-import { List, Map, User, LogOut, MapPin, MapPinOff } from 'lucide-react'
+import { List, User, LogOut, MapPin, MapPinOff, Map as MapIcon } from 'lucide-react'
 import { Button } from '../ui/button'
 import { useAuthStore } from '../../stores/authStore'
 import { useGeolocation } from '../../hooks/useGeolocation'
-import { socketService } from '../../services/socketService'
+import { socketService } from '../../api/socketService'
 import { toast } from 'sonner'
 import OrdersList from './OrdersList'
 import DriverMap from './DriverMap'
 import ProfileScreen from './ProfileScreen'
+import { ZelaMapaFullLogo } from '../ZelaMapaLogos'
 
 type Tab = 'ordens' | 'mapa' | 'perfil'
 
-export default function DriverLayout() {
+interface DriverLayoutProps {
+  onLogout: () => void;
+}
+
+export default function DriverLayout({ onLogout }: DriverLayoutProps) {
   const [activeTab, setActiveTab] = useState<Tab>('ordens')
   const [activeOrderId, setActiveOrderId] = useState<number | null>(null)
-  const { user, logout } = useAuthStore()
+  const { user } = useAuthStore()
   
   const { error: geoError, position } = useGeolocation(!!user)
 
@@ -33,7 +38,7 @@ export default function DriverLayout() {
 
   const handleOrderAccepted = (orderId: number) => {
     setActiveOrderId(orderId)
-    setActiveTab('mapa') // Direciona para o mapa estilo Waze
+    setActiveTab('mapa')
   }
 
   const renderContent = () => {
@@ -43,58 +48,82 @@ export default function DriverLayout() {
       case 'mapa':
         return <DriverMap activeOrderId={activeOrderId} />
       case 'perfil':
-        return <ProfileScreen onLogout={logout} />
+        return <ProfileScreen onLogout={onLogout} />
     }
   }
 
   return (
-    <div className="h-screen bg-[#0f1419] flex flex-col">
-      <header className="flex items-center justify-between px-4 py-3 bg-[#1a1f2e] border-b border-gray-800">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-[#2DCE89] rounded-lg flex items-center justify-center font-bold text-white">ZM</div>
-          <div>
-            <h1 className="text-white font-bold text-sm leading-none">ZelaMapa</h1>
-            <p className="text-[9px] text-[#2DCE89] uppercase font-bold tracking-widest mt-1">Driver App</p>
-          </div>
+    <div className="h-screen bg-[#F4F7FE] flex flex-col font-sans overflow-hidden">
+      {/* HEADER PREMIUM (DNA DASHBOARD) */}
+      <header className="h-24 bg-white/70 backdrop-blur-xl border-b border-gray-200 flex items-center justify-between px-6 z-10">
+        <div className="flex flex-col">
+          <ZelaMapaFullLogo variant="dark" className="h-10 scale-90 origin-left" />
+          <p className="text-[10px] font-black text-[#5e8cf7] uppercase tracking-[0.2em] ml-1 opacity-80">GovTech Excellence</p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {geoError ? (
-             <div className="flex items-center gap-1 text-red-500 bg-red-500/10 px-2 py-1 rounded text-[10px] font-bold">
-               <MapPinOff className="w-3 h-3" /> GPS OFF
+             <div className="flex items-center gap-1 text-red-500 bg-red-500/10 px-3 py-1.5 rounded-full text-[10px] font-black border border-red-500/20">
+               <MapPinOff className="w-3.5 h-3.5" /> GPS OFF
              </div>
           ) : position && (
-             <div className="flex items-center gap-1 text-[#2DCE89] bg-[#2DCE89]/10 px-2 py-1 rounded text-[10px] font-bold animate-pulse">
-               <MapPin className="w-3 h-3" /> ONLINE
+             <div className="flex items-center gap-1 text-[#2DCE89] bg-[#2DCE89]/10 px-3 py-1.5 rounded-full text-[10px] font-black border border-[#2DCE89]/20 animate-pulse">
+               <MapPin className="w-3.5 h-3.5" /> ONLINE
              </div>
           )}
-          <Button variant="ghost" size="icon" onClick={logout} className="text-gray-400 hover:text-red-400">
+          <Button variant="ghost" size="icon" onClick={onLogout} className="text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all">
             <LogOut className="w-5 h-5" />
           </Button>
         </div>
       </header>
 
-      <main className="flex-1 overflow-hidden">{renderContent()}</main>
-
-      <nav className="bg-[#1a1f2e] border-t border-gray-800 pb-safe shadow-2xl">
-        <div className="flex items-center justify-around h-16">
-          <button onClick={() => setActiveTab('ordens')} className={`flex flex-col items-center gap-1 px-4 py-2 transition-all ${activeTab === 'ordens' ? 'text-[#2DCE89] scale-110' : 'text-gray-500'}`}>
-            <List className="w-6 h-6" />
-            <span className="text-[10px] font-bold uppercase">Ordens</span>
-          </button>
-          <button onClick={() => setActiveTab('mapa')} className={`flex flex-col items-center gap-1 px-4 py-2 transition-all ${activeTab === 'mapa' ? 'text-[#2DCE89] scale-110' : 'text-gray-500'}`}>
-            <MapIcon className="w-6 h-6" />
-            <span className="text-[10px] font-bold uppercase">Mapa</span>
-          </button>
-          <button onClick={() => setActiveTab('perfil')} className={`flex flex-col items-center gap-1 px-4 py-2 transition-all ${activeTab === 'perfil' ? 'text-[#2DCE89] scale-110' : 'text-gray-500'}`}>
-            <User className="w-6 h-6" />
-            <span className="text-[10px] font-bold uppercase">Perfil</span>
-          </button>
+      <main className="flex-1 overflow-y-auto pb-32">
+        <div className="max-w-md mx-auto h-full">
+          {renderContent()}
         </div>
-      </nav>
+      </main>
+
+      {/* NAVEGAÇÃO EM PÍLULA FLUTUANTE (PREMIUM) */}
+      <div className="fixed bottom-8 left-0 right-0 px-6 z-50">
+        <nav className="max-w-xs mx-auto bg-white/80 backdrop-blur-2xl border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.1)] rounded-full p-2 flex items-center justify-around">
+          <NavButton 
+            active={activeTab === 'ordens'} 
+            onClick={() => setActiveTab('ordens')} 
+            icon={<List className="w-6 h-6" />} 
+            label="Ordens" 
+          />
+          <NavButton 
+            active={activeTab === 'mapa'} 
+            onClick={() => setActiveTab('mapa')} 
+            icon={<MapIcon className="w-6 h-6" />} 
+            label="Mapa" 
+          />
+          <NavButton 
+            active={activeTab === 'perfil'} 
+            onClick={() => setActiveTab('perfil')} 
+            icon={<User className="w-6 h-6" />} 
+            label="Perfil" 
+          />
+        </nav>
+      </div>
     </div>
   )
 }
 
-// Pequeno fix para o ícone de Map não conflitar com o namespace do Leaflet
-import { Map as MapIcon } from 'lucide-react'
+function NavButton({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: any, label: string }) {
+  return (
+    <button 
+      onClick={onClick} 
+      className={`flex flex-col items-center gap-1 px-5 py-2 rounded-full transition-all duration-300 ${
+        active 
+          ? 'bg-[#2DCE89] text-white shadow-lg shadow-[#2DCE89]/30 scale-105' 
+          : 'text-gray-400 hover:text-gray-600'
+      }`}
+    >
+      {icon}
+      <span className={`text-[8px] font-black uppercase tracking-widest ${active ? 'opacity-100' : 'opacity-0'}`}>
+        {label}
+      </span>
+    </button>
+  )
+}
