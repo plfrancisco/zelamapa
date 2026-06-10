@@ -1,1 +1,0 @@
-# ZelaMapa Backend - FastAPI Application
