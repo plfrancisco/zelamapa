@@ -11,12 +11,10 @@
 
 ## 🏗️ Arquitetura do Sistema
 
-O projeto segue uma arquitetura moderna e escalável:
+O projeto utiliza uma estrutura modular e organizada, separando claramente as responsabilidades:
 
-- **Core API:** Engine de alta performance construída com FastAPI, utilizando padrão de repositório e injeção de dependência.
-- **Frontend Dashboard:** Aplicação administrativa em React com arquitetura baseada em componentes e gerenciamento de estado global.
-- **Driver App:** Interface mobile-first otimizada para operação em campo com mapas interativos e geolocalização persistente.
-- **Real-time Engine:** Integração via WebSockets para rastreamento de frotas e notificações instantâneas.
+- **Backend (Python/FastAPI):** Localizado na pasta `/backend`, contém a API Core, a engine de WebSockets, modelos de dados, e a infraestrutura de banco de dados via Docker.
+- **Frontend (React/Vite):** Localizado na pasta `/frontend`, contém o dashboard administrativo e a interface mobile-first do motorista, utilizando TypeScript e Tailwind CSS.
 
 ---
 
@@ -71,13 +69,6 @@ erDiagram
     }
 ```
 
-### Principais Entidades
-- **Usuários:** Gestão de acesso (RBAC) com níveis de permissão distintos.
-- **Ocorrências:** Registro georreferenciado de demandas urbanas (Entulho, Poda, Lixo, etc).
-- **Ordens de Serviço:** Controle operacional de execução com snapshot de custos e distância.
-- **Motoristas:** Extensão do usuário com dados técnicos de frotas e CNH.
-- **Auditoria:** Registro nominal de cada alteração sensível no sistema (v4.0).
-
 ---
 
 ## 🛠️ Stack Tecnológica
@@ -85,33 +76,34 @@ erDiagram
 ### Backend
 - **Framework:** FastAPI
 - **ORM:** SQLAlchemy
-- **Database:** MySQL 8.0 / SQLite (Dev)
-- **Segurança:** OAuth2 + JWT (Bcrypt para hashing)
-- **Real-time:** WebSockets (FastAPI WebSocket)
+- **Database:** MySQL 8.0 (Containerizado)
+- **Real-time:** Socket.io (ASGI)
 
 ### Frontend
-- **Framework:** React 18 + Vite
+- **Framework:** React 19 + Vite
 - **Linguagem:** TypeScript
 - **Styling:** Tailwind CSS + Shadcn/UI
 - **Maps:** Leaflet & OpenStreetMap
-- **Icons:** Lucide React
+- **State:** Zustand
 
 ---
 
 ## 🚦 Início Rápido
 
-Para rodar o ambiente completo em segundos:
+Para rodar o ambiente completo (API + Frontend + DB):
 
 ```bash
-# Executa o script de inicialização inteligente
+# Permissão de execução (se necessário)
+chmod +x iniciar_projeto.sh
+
+# Inicia tudo simultaneamente
 ./iniciar_projeto.sh
 ```
 
-### Popular Dados de Demonstração
-Para visualizar o dashboard com métricas reais, execute o seed massivo:
-```bash
-python scripts/seed_massivo.py
-```
+### Comandos do Script Mestre
+- `./iniciar_projeto.sh` : Inicia todos os serviços.
+- `./iniciar_projeto.sh --stop` : Para todos os serviços e limpa portas.
+- `./iniciar_projeto.sh --restart` : Reinicia o ambiente completo.
 
 ### 🔐 Credenciais de Apresentação
 - **Administrador:** Login: `admin` | Senha: `admin`
@@ -120,12 +112,29 @@ python scripts/seed_massivo.py
 ---
 
 ## 📐 Organização de Pastas
+
 ```bash
 .
-├── api/             # Backend FastAPI Core
-├── scripts/         # Scripts de Automação e Seed
-├── infra/           # Docker, Render e Vercel Configs
-└── src/             # Código Fonte Frontend React
+├── backend/            # Camada de Servidor (FastAPI)
+│   ├── api/            # Rotas e Endpoints (v1)
+│   ├── core/           # Configurações globais e segurança
+│   ├── db/             # Sessão do banco e classes base
+│   ├── infra/          # Docker (MySQL) e Schema SQL
+│   ├── models/         # Definição de tabelas (SQLAlchemy)
+│   ├── schemas/        # Pydantic (Validação e Serialização)
+│   ├── scripts/        # Automação, Seed Massivo e Simuladores
+│   ├── services/       # Regras de negócio e lógica complexa
+│   ├── main.py         # Ponto de entrada da API
+│   └── websocket.py    # Engine de Real-time (Socket.io)
+├── frontend/           # Camada de Interface (React/Vite)
+│   ├── src/            # Código fonte TypeScript
+│   │   ├── components/ # UI e Componentes de negócio
+│   │   ├── services/   # Integração API/WS
+│   │   └── stores/     # Estado Global (Zustand)
+│   ├── public/         # Ativos estáticos
+│   ├── package.json    # Manifest de dependências
+│   └── vite.config.ts  # Configuração do Build
+└── iniciar_projeto.sh  # Script mestre de orquestração
 ```
 
 ---

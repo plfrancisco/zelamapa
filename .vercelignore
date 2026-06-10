@@ -1,8 +1,0 @@
-api/
-scripts/
-docs/
-infra/
-backend/
-*.log
-*.db
-*.sqlite3

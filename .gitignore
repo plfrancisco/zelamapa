@@ -1,2 +1,37 @@
-node_modules/\ndist/\n.env
+# Dependências
+node_modules/
+dist/
+.env
+
+# Logs e Processos
+*.log
+*.pid
+.api.pid
+.frontend.pid
+.backend.pid
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+
+# Inteligência Local e Workflows (Gemini/Antigravity)
+.skills/
+.workflows/
+
+# Documentação Interna (Opcional - remova se quiser versionar)
 docs/
+
+# IDEs e Editores
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+# Logs do NPM
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

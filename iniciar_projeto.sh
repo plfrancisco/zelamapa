@@ -18,10 +18,10 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-API_DIR="$PROJECT_DIR/api"
+API_DIR="$PROJECT_DIR/backend"
 FRONTEND_DIR="$PROJECT_DIR/frontend"
-INFRA_DIR="$PROJECT_DIR/infra"
-SCRIPTS_DIR="$PROJECT_DIR/scripts"
+INFRA_DIR="$PROJECT_DIR/backend/infra"
+SCRIPTS_DIR="$PROJECT_DIR/backend/scripts"
 DATA_DIR="$PROJECT_DIR/data"
 
 API_PORT=8000
@@ -56,7 +56,7 @@ start_api() {
 
     # Garantir Infra (MySQL no Docker)
     if ! docker ps --filter "name=bdzelamapa" --format '{{.Status}}' | grep -q "Up"; then
-        log_info "Subindo container MySQL via infra/docker-compose.yml..."
+        log_info "Subindo container MySQL via backend/infra/docker-compose.yml..."
         cd "$INFRA_DIR" && docker compose up -d
         cd "$PROJECT_DIR"
         sleep 5
@@ -66,7 +66,7 @@ start_api() {
     # log_info "Executando scripts de sincronização..."
     # python3 "$SCRIPTS_DIR/seed_mysql.py" > /dev/null 2>&1 || log_warning "Seed falhou, ignorando..."
 
-    nohup uvicorn api.main:app --reload --host 0.0.0.0 --port $API_PORT > "$API_DIR/api.log" 2>&1 &
+    nohup uvicorn backend.main:app --reload --host 0.0.0.0 --port $API_PORT > "$PROJECT_DIR/backend.log" 2>&1 &
     echo $! > "$PROJECT_DIR/.api.pid"
     
     # Aguardar até 10 segundos para a API iniciar
@@ -80,7 +80,7 @@ start_api() {
     if is_port_in_use $API_PORT; then
         log_success "API: http://localhost:$API_PORT"
     else
-        log_error "Falha ao iniciar API. Verifique logs em $API_DIR/api.log"
+        log_error "Falha ao iniciar API. Verifique logs em $PROJECT_DIR/backend.log"
         exit 1
     fi
 }
@@ -94,7 +94,7 @@ start_frontend() {
     log_info "Iniciando Frontend (Vite)..."
     cd "$FRONTEND_DIR"
 
-    nohup npm run dev -- --host 0.0.0.0 --port $FRONTEND_PORT > "$FRONTEND_DIR/frontend.log" 2>&1 &
+    nohup npm run dev -- --host 0.0.0.0 --port $FRONTEND_PORT > "$PROJECT_DIR/frontend.log" 2>&1 &
     echo $! > "$PROJECT_DIR/.frontend.pid"
     sleep 3
 
